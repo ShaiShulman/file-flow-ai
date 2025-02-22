@@ -2,8 +2,8 @@ import os
 
 # AWS Bedrock Configuration
 AWS_DEFAULT_REGION = "us-east-1"
-# BEDROCK_MODEL_ID = "anthropic.claude-3-5-sonnet-20240620-v1:0"
-BEDROCK_MODEL_ID = "amazon.nova-micro-v1:0"
+BEDROCK_MODEL_ID = "anthropic.claude-3-5-sonnet-20240620-v1:0"
+# BEDROCK_MODEL_ID = "amazon.nova-micro-v1:0"
 
 # Model Configuration
 MODEL_KWARGS = {
