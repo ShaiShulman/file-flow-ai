@@ -5,6 +5,7 @@ from markitdown import MarkItDown
 from langchain.tools import tool
 
 from utils import truncate_text
+from config import WORKING_DIRECTORY, ALLOW_EXTERNAL_DIRECTORIES
 
 
 @tool
@@ -277,7 +278,7 @@ def change_directory(working_directory: str, new_path: Optional[str] = None) -> 
 
     Args:
         working_directory (str): Current working directory
-        new_path (Optional[str]): New path to change to, relative to current working directory. If None, stays in current directory
+        new_path (Optional[str]): New path to change to. Can be absolute or relative to current working directory. If None, stays in current directory
 
     Returns:
         dict: Dictionary containing the new working directory and status message
@@ -288,21 +289,54 @@ def change_directory(working_directory: str, new_path: Optional[str] = None) -> 
             "message": f"Current directory: {working_directory}",
         }
 
-    new_full_path = _get_full_path(working_directory, new_path)
+    # Handle absolute paths correctly
+    if os.path.isabs(new_path):
+        # Check if we're allowed to go to external directories
+        if not ALLOW_EXTERNAL_DIRECTORIES:
+            # Check if the path is a subdirectory of WORKING_DIRECTORY
+            if not os.path.commonpath([new_path]).startswith(
+                os.path.commonpath([WORKING_DIRECTORY])
+            ):
+                return {
+                    "working_directory": working_directory,
+                    "message": f"Cannot change to directory outside of workspace: {new_path}. For security reasons, directory changes are restricted to within {WORKING_DIRECTORY}",
+                }
+        new_full_path = new_path
+    else:
+        # For relative paths, join with working directory
+        new_full_path = os.path.join(working_directory, new_path)
 
-    if not os.path.exists(new_full_path):
+    # Normalize the path to resolve any . or .. components
+    new_full_path = os.path.normpath(new_full_path)
+
+    try:
+        # Check if the path exists and is accessible
+        if not os.path.exists(new_full_path):
+            return {
+                "working_directory": working_directory,
+                "message": f"Path '{new_path}' does not exist",
+            }
+
+        if not os.path.isdir(new_full_path):
+            return {
+                "working_directory": working_directory,
+                "message": f"Path '{new_path}' is not a directory",
+            }
+
+        # Test if we can access the directory
+        os.listdir(new_full_path)
+
+        return {
+            "working_directory": new_full_path,
+            "message": f"Changed directory to: {new_full_path}",
+        }
+    except PermissionError:
         return {
             "working_directory": working_directory,
-            "message": f"Path '{new_path}' does not exist",
+            "message": f"Permission denied: cannot access '{new_path}'",
         }
-
-    if not os.path.isdir(new_full_path):
+    except Exception as e:
         return {
             "working_directory": working_directory,
-            "message": f"Path '{new_path}' is not a directory",
+            "message": f"Error changing to '{new_path}': {str(e)}",
         }
-
-    return {
-        "working_directory": new_full_path,
-        "message": f"Changed directory to: {new_full_path}",
-    }

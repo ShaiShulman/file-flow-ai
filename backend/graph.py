@@ -3,12 +3,12 @@ from typing_extensions import TypedDict
 from langgraph.graph.message import AnyMessage, add_messages
 from langgraph.graph import StateGraph, START
 from langgraph.prebuilt import tools_condition
-from langchain_core.runnables import Runnable
+from langchain_core.runnables import Runnable, RunnableLambda
 from langgraph.checkpoint.memory import MemorySaver
 from prompts import primary_assistant_prompt
 from llm import llm
 from config import WORKING_DIRECTORY
-from tools import create_tool_node_with_fallback, part_1_tools
+from tools import create_tool_node_with_fallback, part_1_tools, process_tools_output
 
 
 class State(TypedDict):
@@ -23,9 +23,12 @@ class Assistant:
 
     def __call__(self, state: State):
         while True:
-            # Create a new runnable with the current working directory
+            # Get the working directory from state
+            current_wd = state.get("working_directory", WORKING_DIRECTORY)
+
+            # Create a new runnable with the current working directory from state
             current_runnable = primary_assistant_prompt.partial(
-                working_directory=WORKING_DIRECTORY
+                working_directory=current_wd
             ) | llm.bind_tools(part_1_tools)
 
             # Invoke the runnable with the current state
@@ -42,7 +45,7 @@ class Assistant:
                 state = {
                     **state,
                     "messages": messages,
-                    "working_directory": state["working_directory"],
+                    "working_directory": current_wd,
                 }
             else:
                 # Break the loop when valid output is obtained
@@ -52,6 +55,11 @@ class Assistant:
         return {"messages": result}
 
 
+# Initialize with a default working directory from config
+def get_initial_state():
+    return {"working_directory": WORKING_DIRECTORY}
+
+
 # Remove the static binding since we'll do it dynamically
 part_1_assistant_runnable = llm.bind_tools(part_1_tools)
 
@@ -59,10 +67,14 @@ builder = StateGraph(State)
 
 builder.add_node("assistant", Assistant(part_1_assistant_runnable))
 builder.add_node("tools", create_tool_node_with_fallback(part_1_tools))
+builder.add_node("process_output", RunnableLambda(process_tools_output))
 
 builder.add_edge(START, "assistant")  # Start with the assistant
 builder.add_conditional_edges("assistant", tools_condition)  # Move to tools after input
-builder.add_edge("tools", "assistant")  # Return to assistant after tool execution
+builder.add_edge(
+    "tools", "process_output"
+)  # Process the tool output to update state if needed
+builder.add_edge("process_output", "assistant")  # Return to assistant after processing
 
 memory = MemorySaver()
 
