@@ -18,6 +18,9 @@ WORKING_DIRECTORY = os.path.join(
     os.path.expanduser("~"), "folder_bot_workspace"
 ).replace("/", "\\")
 
+# Allow changing to directories anywhere on the system
+ALLOW_EXTERNAL_DIRECTORIES = True
+
 # Agent Configuration
 AGENT_VERBOSE = True
 
