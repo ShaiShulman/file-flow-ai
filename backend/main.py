@@ -1,8 +1,12 @@
 import os
 import uuid
+import warnings
 import config
 from langchain_core.messages.ai import AIMessage
 from graph import graph
+
+# Suppress the specific deprecation warning from botocore
+warnings.filterwarnings("ignore", category=DeprecationWarning, module="botocore.auth")
 
 
 def setup_aws_credentials():
@@ -48,8 +52,44 @@ def main():
         )
 
         last_event = None
+        event_counter = 1
         for event in events:
-            print("\033[94m" + str(event) + "\033[0m" + "\n")
+            # Format the event as a string with proper line breaks
+            event_str = f"\nEvent {event_counter}:"
+
+            # Handle different types of events
+            if isinstance(event, dict):
+                for key, value in event.items():
+                    if key == "messages":
+                        event_str += "\n  Messages:"
+                        for msg_idx, msg in enumerate(value, 1):
+                            msg_type = (
+                                msg.__class__.__name__
+                                if hasattr(msg, "__class__")
+                                else type(msg).__name__
+                            )
+                            msg_str = f"\n    - [{msg_idx}] [{msg_type}] {msg}"
+                            # Color individual messages red if they contain the word error, blue otherwise
+                            if "error" in str(msg).lower():
+                                msg_str = (
+                                    "\033[91m" + msg_str + "\033[0m"
+                                )  # Red for error messages
+                            else:
+                                msg_str = (
+                                    "\033[94m" + msg_str + "\033[0m"
+                                )  # Blue for normal messages
+                            event_str += msg_str
+                    elif key == "working_directory":
+                        event_str += f"\n  Working Directory: {value}"
+                    else:
+                        event_str += f"\n  {key}: {value}"
+            else:
+                event_str += f"\n  {event}"
+
+            # Print all events in blue
+            print("\033[94m" + event_str + "\033[0m")  # Blue for all events
+
+            event_counter += 1
             last_event = event
 
         if last_event:

@@ -1,16 +1,24 @@
 import os
 import shutil
+import json
 from typing import List, Optional, Union, Literal
 from markitdown import MarkItDown
-from langchain.tools import tool
+from langchain_core.tools import tool
 
 from utils import truncate_text
 from config import WORKING_DIRECTORY, ALLOW_EXTERNAL_DIRECTORIES
 
 
-@tool
 def _get_full_path(working_directory: str, folder_path: Optional[str] = None) -> str:
-    """Convert relative path to full path within working directory."""
+    """Convert relative path to full path within working directory.
+
+    Args:
+        working_directory (str): Base directory where operations are performed
+        folder_path (Optional[str]): Relative path to convert. If None, returns working_directory
+
+    Returns:
+        str: Full path
+    """
     return (
         os.path.join(working_directory, folder_path)
         if folder_path
@@ -38,11 +46,7 @@ def create_item(
     Returns:
         str: Success/failure message describing the operation result
     """
-    parent_full_path = (
-        _get_full_path(working_directory, parent_path)
-        if parent_path
-        else working_directory
-    )
+    parent_full_path = _get_full_path(working_directory, parent_path)
     new_path = os.path.join(parent_full_path, name)
 
     if not os.path.exists(parent_full_path):
@@ -232,7 +236,7 @@ def list_items(
                     items.append(f"📁 {rel_path}")
 
     if not items:
-        return f"No {item_type} found"
+        return f"No {item_type} found in {path if path else 'working directory'}"
 
     return "\n".join(sorted(items))
 
@@ -246,8 +250,7 @@ def get_content(working_directory: str, path: str) -> str:
         path (str): Path to the file, relative to working_directory
 
     Returns:
-        str: File content as text. For supported document types (.pptx, .docx, .pdf, .jpg, .jpeg, .png),
-             converts content to readable text format. For other files, returns raw text content.
+        str: File content or error message
     """
     supported_extensions = (".pptx", ".docx", ".pdf", ".jpg", ".jpeg", ".png")
     full_path = _get_full_path(working_directory, path)
@@ -255,88 +258,95 @@ def get_content(working_directory: str, path: str) -> str:
     if not os.path.exists(full_path):
         return f"Path '{path}' does not exist"
 
-    is_file = os.path.isfile(full_path)
-    if not is_file:
+    if not os.path.isfile(full_path):
         return f"Path '{path}' is not a file"
 
     file_ext = os.path.splitext(full_path)[1].lower()
     if file_ext not in supported_extensions:
         try:
             with open(full_path, "r", encoding="utf-8") as f:
-                return f.read()
+                content = f.read()
+                return f"Content of '{path}':\n{content}"
         except Exception as e:
             return f"Error reading file '{path}': {str(e)}"
     else:
         md = MarkItDown()
         result = md.convert(full_path)
-        return truncate_text(result.text_content)
+        return f"Content of '{path}':\n{truncate_text(result.text_content)}"
 
 
 @tool
-def change_directory(working_directory: str, new_path: Optional[str] = None) -> dict:
-    """Change the current working directory to a new path (does not give info on current directory).
+def change_directory(working_directory: str, new_path: Optional[str] = None) -> str:
+    """Change the current working directory to a new path.
 
     Args:
         working_directory (str): Current working directory
-        new_path (Optional[str]): New path to change to. Can be absolute or relative to current working directory. If None, stays in current directory
+        new_path (Optional[str]): New path to change to. Can be absolute or relative to current working directory
 
     Returns:
-        dict: Dictionary containing the new working directory and status message
+        str: JSON string containing the new working directory and status message
     """
     if new_path is None:
-        return {
-            "working_directory": working_directory,
-            "message": f"Current directory: {working_directory}",
-        }
+        return json.dumps(
+            {
+                "working_directory": working_directory,
+                "message": f"Current directory: {working_directory}",
+            }
+        )
 
     # Handle absolute paths correctly
     if os.path.isabs(new_path):
-        # Check if we're allowed to go to external directories
         if not ALLOW_EXTERNAL_DIRECTORIES:
-            # Check if the path is a subdirectory of WORKING_DIRECTORY
             if not os.path.commonpath([new_path]).startswith(
                 os.path.commonpath([WORKING_DIRECTORY])
             ):
-                return {
-                    "working_directory": working_directory,
-                    "message": f"Cannot change to directory outside of workspace: {new_path}. For security reasons, directory changes are restricted to within {WORKING_DIRECTORY}",
-                }
+                return json.dumps(
+                    {
+                        "working_directory": working_directory,
+                        "message": f"Cannot change to directory outside of workspace: {new_path}",
+                    }
+                )
         new_full_path = new_path
     else:
-        # For relative paths, join with working directory
-        new_full_path = os.path.join(working_directory, new_path)
+        new_full_path = _get_full_path(working_directory, new_path)
 
-    # Normalize the path to resolve any . or .. components
     new_full_path = os.path.normpath(new_full_path)
 
     try:
-        # Check if the path exists and is accessible
         if not os.path.exists(new_full_path):
-            return {
-                "working_directory": working_directory,
-                "message": f"Path '{new_path}' does not exist",
-            }
+            return json.dumps(
+                {
+                    "working_directory": working_directory,
+                    "message": f"Path '{new_path}' does not exist",
+                }
+            )
 
         if not os.path.isdir(new_full_path):
-            return {
-                "working_directory": working_directory,
-                "message": f"Path '{new_path}' is not a directory",
-            }
+            return json.dumps(
+                {
+                    "working_directory": working_directory,
+                    "message": f"Path '{new_path}' is not a directory",
+                }
+            )
 
-        # Test if we can access the directory
         os.listdir(new_full_path)
-
-        return {
-            "working_directory": new_full_path,
-            "message": f"Changed directory to: {new_full_path}",
-        }
+        return json.dumps(
+            {
+                "working_directory": new_full_path,
+                "message": f"Changed directory to: {new_full_path}",
+            }
+        )
     except PermissionError:
-        return {
-            "working_directory": working_directory,
-            "message": f"Permission denied: cannot access '{new_path}'",
-        }
+        return json.dumps(
+            {
+                "working_directory": working_directory,
+                "message": f"Permission denied: cannot access '{new_path}'",
+            }
+        )
     except Exception as e:
-        return {
-            "working_directory": working_directory,
-            "message": f"Error changing to '{new_path}': {str(e)}",
-        }
+        return json.dumps(
+            {
+                "working_directory": working_directory,
+                "message": f"Error changing to '{new_path}': {str(e)}",
+            }
+        )
