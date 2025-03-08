@@ -3,6 +3,7 @@ import uuid
 import warnings
 import config
 from langchain_core.messages.ai import AIMessage
+from langchain_core.messages import ToolMessage
 from graph import graph
 
 # Suppress the specific deprecation warning from botocore
@@ -91,6 +92,41 @@ def main():
 
             event_counter += 1
             last_event = event
+
+        # Handle interrupts for sensitive tools
+        snapshot = agent.get_state(memory_config)
+        while snapshot and snapshot.next:
+            print(
+                "\nSensitive operation detected! This operation will modify the file system."
+            )
+            user_approval = (
+                input(
+                    "Do you approve this action? (y/n) or provide alternative instructions: "
+                )
+                .strip()
+                .lower()
+            )
+
+            if user_approval == "y":
+                result = agent.invoke(None, memory_config)
+            else:
+                if user_approval == "n":
+                    message = "Operation cancelled by user."
+                else:
+                    message = f"Operation modified: {user_approval}"
+
+                result = agent.invoke(
+                    {
+                        "messages": [
+                            ToolMessage(
+                                tool_call_id=event["messages"][-1].tool_calls[0]["id"],
+                                content=f"API call modified. Reason: {message}",
+                            )
+                        ]
+                    },
+                    memory_config,
+                )
+            snapshot = agent.get_state(memory_config)
 
         if last_event:
             # Update working directory if it changed during execution

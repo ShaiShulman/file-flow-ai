@@ -12,6 +12,23 @@ from folder_operations import (
     change_directory,
 )
 
+# Safe tools are read-only operations that don't modify the file system
+safe_tools = [
+    get_content,
+    list_items,
+    change_directory,
+]
+
+# Sensitive tools are operations that modify the file system
+sensitive_tools = [
+    create_item,
+    delete_item,
+    move_item,
+]
+
+# Create a set of sensitive tool names for quick lookup
+sensitive_tool_names = {t.name for t in sensitive_tools}
+
 
 def handle_tool_error(state) -> dict:
     """
@@ -85,13 +102,3 @@ def create_tool_node_with_fallback(tools: list) -> dict:
 def process_tools_output(state):
     """Handle the output from tools execution and update state accordingly."""
     return update_working_directory(state)
-
-
-part_1_tools = [
-    create_item,
-    get_content,
-    delete_item,
-    list_items,
-    move_item,
-    change_directory,
-]
