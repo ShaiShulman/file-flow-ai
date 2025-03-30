@@ -1,7 +1,7 @@
 import time
 import boto3
 from langchain_aws import ChatBedrock as Bedrock
-from config import BEDROCK_MODEL_ID, AWS_DEFAULT_REGION
+from config import BEDROCK_INSTRUCTIONS_MODEL_ID, AWS_DEFAULT_REGION
 
 
 class TimedBedrock(Bedrock):
@@ -19,7 +19,7 @@ def get_bedrock_client(region):
 
 def create_bedrock_llm(client):
     return TimedBedrock(
-        model_id=BEDROCK_MODEL_ID,
+        model_id=BEDROCK_INSTRUCTIONS_MODEL_ID,
         client=client,
         model_kwargs={"temperature": 0},
         region_name=AWS_DEFAULT_REGION,

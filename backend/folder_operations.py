@@ -1,6 +1,6 @@
 import os
 import shutil
-import jsonברק
+import json
 from typing import List, Optional, Union, Literal
 from markitdown import MarkItDown
 from langchain_core.tools import tool
@@ -241,7 +241,6 @@ def list_items(
     return "\n".join(sorted(items))
 
 
-@tool
 def get_content(working_directory: str, path: str) -> str:
     """Read and return the content of a file.
 

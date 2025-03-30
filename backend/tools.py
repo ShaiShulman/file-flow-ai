@@ -8,22 +8,45 @@ from folder_operations import (
     get_content,
     delete_item,
     list_items,
+    copy_item,
     move_item,
     change_directory,
 )
 
+from category_tools import (
+    add_category,
+    remove_category,
+    update_category,
+    clear_categories,
+    list_categories,
+    get_category,
+)
+
+from text_analysis import (
+    analyze_document,
+)
+
 # Safe tools are read-only operations that don't modify the file system
 safe_tools = [
-    get_content,
     list_items,
     change_directory,
+    # Category management tools
+    add_category,
+    remove_category,
+    update_category,
+    clear_categories,
+    list_categories,
+    get_category,
+    # Text analysis tools
+    analyze_document,
 ]
 
 # Sensitive tools are operations that modify the file system
 sensitive_tools = [
-    create_item,
     delete_item,
     move_item,
+    copy_item,
+    create_item,
 ]
 
 # Create a set of sensitive tool names for quick lookup
