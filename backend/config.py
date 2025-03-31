@@ -1,5 +1,8 @@
 import os
 
+# Run Configuration
+DEBUG_LLM = False
+
 # AWS Bedrock Configuration
 AWS_DEFAULT_REGION = "us-east-1"
 BEDROCK_INSTRUCTIONS_MODEL_ID = "anthropic.claude-3-5-sonnet-20240620-v1:0"

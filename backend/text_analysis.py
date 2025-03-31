@@ -1,12 +1,12 @@
 import os
 import json
 import re
-from typing import Dict, List, Optional, Any, Union
+from typing import Dict, Optional, Any
 import boto3
 from langchain_core.tools import tool
 
 from utils import truncate_text
-from config import AWS_DEFAULT_REGION, BEDROCK_TEXT_MODEL_ID
+from config import AWS_DEFAULT_REGION, BEDROCK_TEXT_MODEL_ID, DEBUG_LLM
 from categories import categories_manager
 from folder_operations import _get_full_path, get_content
 
@@ -64,7 +64,8 @@ class TextAnalyzer:
             str: The model's response
         """
         # Print the prompt in orange
-        print("\033[38;5;208m=== PROMPT ===\n" + prompt + "\n=============\033[0m")
+        if DEBUG_LLM:
+            print("\033[38;5;208m=== PROMPT ===\n" + prompt + "\n=============\033[0m")
 
         try:
             response = self.client.invoke_model(
@@ -90,16 +91,20 @@ class TextAnalyzer:
             response_text = response_body.get("content", [{}])[0].get("text", "")
 
             # Print the response in orange
-            print(
-                "\033[38;5;208m=== RESPONSE ===\n"
-                + response_text
-                + "\n==============\033[0m"
-            )
+            if DEBUG_LLM:
+                print(
+                    "\033[38;5;208m=== RESPONSE ===\n"
+                    + response_text
+                    + "\n==============\033[0m"
+                )
 
             return response_text
         except Exception as e:
             error_msg = f"Error invoking Bedrock model: {str(e)}"
-            print("\033[38;5;208m=== ERROR ===\n" + error_msg + "\n===========\033[0m")
+            if DEBUG_LLM:
+                print(
+                    "\033[38;5;208m=== ERROR ===\n" + error_msg + "\n===========\033[0m"
+                )
             return error_msg
 
     def build_instruction_section(

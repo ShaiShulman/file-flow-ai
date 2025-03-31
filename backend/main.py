@@ -1,9 +1,11 @@
 import os
 import uuid
 import warnings
+from tools import get_directory_tree
 import config
 from langchain_core.messages.ai import AIMessage
 from langchain_core.messages import ToolMessage
+
 from graph import graph
 
 # Suppress the specific deprecation warning from botocore
@@ -137,6 +139,19 @@ def main():
                 working_directory = last_event["working_directory"]
                 print(f"Working directory changed to: {working_directory}")
 
+            # Display folder content
+            print("\033[93m" + get_directory_tree(working_directory) + "\033[0m" + "\n")
+
+            # # Show last DisplayMessage
+            # if (
+            #     "messages" in last_event
+            #     and last_event["messages"]
+            #     and len(last_event["messages"]) > 1
+            #     and isinstance(last_event["messages"][-2], AIMessage)
+            # ):
+            #     print(
+            #         "\033[93m" + last_event["messages"][-2].content + "\033[0m" + "\n"
+            #     )
             # Display AI response
             if (
                 "messages" in last_event

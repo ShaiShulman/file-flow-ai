@@ -22,27 +22,28 @@ class Assistant:
         self.runnable = runnable
 
     def __call__(self, state: State):
-        while True:
-            current_wd = state.get("working_directory", WORKING_DIRECTORY)
-            current_runnable = primary_assistant_prompt.partial(
-                working_directory=current_wd
-            ) | llm.bind_tools(safe_tools + sensitive_tools)
+        current_wd = state.get("working_directory", WORKING_DIRECTORY)
+        # Create the runnable once with the current working directory
+        current_runnable = (
+            primary_assistant_prompt.partial(working_directory=current_wd)
+            | self.runnable
+        )
 
+        result = current_runnable.invoke(state)
+
+        # If we get an empty response, ask for clarification
+        if not result.tool_calls and (
+            not result.content
+            or isinstance(result.content, list)
+            and not result.content[0].get("text")
+        ):
+            messages = state["messages"] + [("user", "Respond with a real output.")]
+            state = {
+                **state,
+                "messages": messages,
+                "working_directory": current_wd,
+            }
             result = current_runnable.invoke(state)
-
-            if not result.tool_calls and (
-                not result.content
-                or isinstance(result.content, list)
-                and not result.content[0].get("text")
-            ):
-                messages = state["messages"] + [("user", "Respond with a real output.")]
-                state = {
-                    **state,
-                    "messages": messages,
-                    "working_directory": current_wd,
-                }
-            else:
-                break
 
         return {"messages": result}
 
@@ -52,6 +53,7 @@ def get_initial_state():
 
 
 def route_tools(state: State):
+    """Route messages to appropriate tool nodes based on tool calls."""
     next_node = tools_condition(state)
     if next_node == END:
         return END
@@ -60,13 +62,13 @@ def route_tools(state: State):
     if not hasattr(ai_message, "tool_calls") or not ai_message.tool_calls:
         return END
 
-    first_tool_call = ai_message.tool_calls[0]
-    tool_name = first_tool_call.get("name", "")
+    # Use any() with list comprehension for efficient checking
+    has_sensitive_tools = any(
+        tool_call.get("name", "") in sensitive_tool_names
+        for tool_call in ai_message.tool_calls
+    )
 
-    print(f"Tool name: {tool_name}")
-    if tool_name in sensitive_tool_names:
-        return "sensitive_tools"
-    return "safe_tools"
+    return "sensitive_tools" if has_sensitive_tools else "safe_tools"
 
 
 builder = StateGraph(State)

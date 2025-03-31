@@ -1,3 +1,4 @@
+import os
 from langchain_core.messages import ToolMessage
 from langchain_core.runnables import RunnableLambda
 from langgraph.prebuilt import ToolNode
@@ -51,6 +52,38 @@ sensitive_tools = [
 
 # Create a set of sensitive tool names for quick lookup
 sensitive_tool_names = {t.name for t in sensitive_tools}
+
+
+def get_directory_tree(working_directory: str) -> str:
+    """Display the directory structure in a tree-like format with icons.
+
+    Args:
+        working_directory (str): The directory to display
+
+    Returns:
+        str: Tree-like structure of the directory with icons
+    """
+    try:
+        tree_output = []
+
+        # Get all items in directory using scandir
+        with os.scandir(working_directory) as entries:
+            # Convert to list so we can check length
+            entries = list(entries)
+
+            for idx, entry in enumerate(entries):
+                is_last = idx == len(entries) - 1
+                prefix = "└── " if is_last else "├── "
+
+                # Add icon based on entry type
+                icon = "📁 " if entry.is_dir() else "📄 "
+
+                # Add the current item with icon
+                tree_output.append(f"{prefix}{icon}{entry.name}")
+
+        return "\n".join(tree_output)
+    except Exception as e:
+        return f"Error displaying directory tree: {str(e)}"
 
 
 def handle_tool_error(state) -> dict:
