@@ -23,7 +23,6 @@ class Assistant:
 
     def __call__(self, state: State):
         current_wd = state.get("working_directory", WORKING_DIRECTORY)
-        # Create the runnable once with the current working directory
         current_runnable = (
             primary_assistant_prompt.partial(working_directory=current_wd)
             | self.runnable
@@ -62,7 +61,6 @@ def route_tools(state: State):
     if not hasattr(ai_message, "tool_calls") or not ai_message.tool_calls:
         return END
 
-    # Use any() with list comprehension for efficient checking
     has_sensitive_tools = any(
         tool_call.get("name", "") in sensitive_tool_names
         for tool_call in ai_message.tool_calls

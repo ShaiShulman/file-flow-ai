@@ -49,6 +49,7 @@ def main():
             {
                 "messages": [("user", user_input)],
                 "working_directory": working_directory,
+                "affected_files": [],
             },
             memory_config,
             stream_mode="values",
@@ -140,18 +141,23 @@ def main():
                 print(f"Working directory changed to: {working_directory}")
 
             # Display folder content
-            print("\033[93m" + get_directory_tree(working_directory) + "\033[0m" + "\n")
+            print(
+                "\033[93m"
+                + get_directory_tree(working_directory, last_event["affected_files"])
+                + "\033[0m"
+                + "\n"
+            )
 
-            # # Show last DisplayMessage
-            # if (
-            #     "messages" in last_event
-            #     and last_event["messages"]
-            #     and len(last_event["messages"]) > 1
-            #     and isinstance(last_event["messages"][-2], AIMessage)
-            # ):
-            #     print(
-            #         "\033[93m" + last_event["messages"][-2].content + "\033[0m" + "\n"
-            #     )
+            # Show message from last tool
+            if (
+                "messages" in last_event
+                and last_event["messages"]
+                and len(last_event["messages"]) > 1
+                and isinstance(last_event["messages"][-2], AIMessage)
+            ):
+                print(
+                    "\033[93m" + last_event["messages"][-2].content + "\033[0m" + "\n"
+                )
             # Display AI response
             if (
                 "messages" in last_event

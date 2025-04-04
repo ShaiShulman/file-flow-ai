@@ -2,11 +2,11 @@ import os
 from langchain_core.messages import ToolMessage
 from langchain_core.runnables import RunnableLambda
 from langgraph.prebuilt import ToolNode
+from langchain_core.messages.ai import AIMessage
 import json
 
 from folder_operations import (
     create_item,
-    get_content,
     delete_item,
     list_items,
     copy_item,
@@ -31,34 +31,37 @@ from text_analysis import (
 safe_tools = [
     list_items,
     change_directory,
-    # Category management tools
     add_category,
     remove_category,
     update_category,
     clear_categories,
     list_categories,
     get_category,
-    # Text analysis tools
     analyze_document,
-]
-
-# Sensitive tools are operations that modify the file system
-sensitive_tools = [
+    # Sensitive tools
     delete_item,
     move_item,
     copy_item,
     create_item,
 ]
 
+# Sensitive tools are operations that modify the file system
+sensitive_tools = []
+
 # Create a set of sensitive tool names for quick lookup
 sensitive_tool_names = {t.name for t in sensitive_tools}
 
 
-def get_directory_tree(working_directory: str) -> str:
+class DisplayMessage(AIMessage):
+    pass
+
+
+def get_directory_tree(working_directory: str, affected_files: list[str]) -> str:
     """Display the directory structure in a tree-like format with icons.
 
     Args:
         working_directory (str): The directory to display
+        affected_files (list[str]): List of full file paths that should be marked with an asterisk
 
     Returns:
         str: Tree-like structure of the directory with icons
@@ -68,18 +71,19 @@ def get_directory_tree(working_directory: str) -> str:
 
         # Get all items in directory using scandir
         with os.scandir(working_directory) as entries:
-            # Convert to list so we can check length
             entries = list(entries)
 
             for idx, entry in enumerate(entries):
                 is_last = idx == len(entries) - 1
                 prefix = "└── " if is_last else "├── "
 
-                # Add icon based on entry type
                 icon = "📁 " if entry.is_dir() else "📄 "
 
-                # Add the current item with icon
-                tree_output.append(f"{prefix}{icon}{entry.name}")
+                # Check if the full path of the entry is in affected_files
+                full_path = os.path.join(working_directory, entry.name)
+                affected_marker = " *" if full_path in affected_files else ""
+
+                tree_output.append(f"{prefix}{icon}{entry.name}{affected_marker}")
 
         return "\n".join(tree_output)
     except Exception as e:
@@ -107,6 +111,31 @@ def handle_tool_error(state) -> dict:
             for tc in tool_calls
         ]
     }
+
+
+def extract_tool_result(state) -> dict:
+    """
+    Process the result from tool execution and update state accordingly.
+
+    Args:
+        state (dict): The current state of the AI agent, which includes messages and tool call details.
+
+    Returns:
+        dict: The updated state with any changes from tool execution.
+    """
+    last_message = state["messages"][-1]
+    if (
+        hasattr(last_message, "name")
+        # and last_message.name in sensitive_tool_names
+        and last_message.content
+    ):
+        content_dict = json.loads(last_message.content)
+        if "affected_files" in content_dict:
+            return {
+                "affected_files": state["affected_files"]
+                + content_dict["affected_files"]
+            }
+    return {}
 
 
 def update_working_directory(state) -> dict:
@@ -157,4 +186,6 @@ def create_tool_node_with_fallback(tools: list) -> dict:
 
 def process_tools_output(state):
     """Handle the output from tools execution and update state accordingly."""
-    return update_working_directory(state)
+    working_dir_update = update_working_directory(state)
+    tool_result = extract_tool_result(state)
+    return {**working_dir_update, **tool_result}

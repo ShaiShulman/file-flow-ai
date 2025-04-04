@@ -33,7 +33,7 @@ def create_item(
     item_type: Literal["file", "folder"],
     parent_path: Optional[str] = None,
     content: Optional[str] = None,
-) -> str:
+) -> dict:
     """Create a new file or folder in the specified directory.
 
     Args:
@@ -44,25 +44,37 @@ def create_item(
         content (Optional[str]): Content to write if creating a file
 
     Returns:
-        str: Success/failure message describing the operation result
+        dict: Dictionary containing success/failure message and affected files
     """
     parent_full_path = _get_full_path(working_directory, parent_path)
     new_path = os.path.join(parent_full_path, name)
+    affected_files = []
 
     if not os.path.exists(parent_full_path):
         os.makedirs(parent_full_path)
 
     if os.path.exists(new_path):
-        return f"{item_type.title()} '{name}' already exists"
+        return {
+            "message": f"{item_type.title()} '{name}' already exists",
+            "affected_files": [],
+        }
 
     if item_type == "folder":
         os.makedirs(new_path)
-        return f"Created folder '{name}' in '{parent_path if parent_path else 'working directory'}'"
+        affected_files.append(new_path)
+        return {
+            "message": f"Created folder '{name}' in '{parent_path if parent_path else 'working directory'}'",
+            "affected_files": affected_files,
+        }
     else:
         with open(new_path, "w") as f:
             if content:
                 f.write(content)
-        return f"Created file '{name}'{' with content' if content else ''} in '{parent_path if parent_path else 'working directory'}'"
+        affected_files.append(new_path)
+        return {
+            "message": f"Created file '{name}'{' with content' if content else ''} in '{parent_path if parent_path else 'working directory'}'",
+            "affected_files": affected_files,
+        }
 
 
 @tool
@@ -70,7 +82,7 @@ def copy_item(
     working_directory: str,
     source_path: str,
     dest_path: str,
-) -> str:
+) -> dict:
     """Copy a file or folder to a new location.
 
     Args:
@@ -79,26 +91,41 @@ def copy_item(
         dest_path (str): Destination path where item should be copied, relative to working_directory
 
     Returns:
-        str: Success/failure message describing the operation result
+        dict: Dictionary containing success/failure message and affected files
     """
     source_full_path = _get_full_path(working_directory, source_path)
     dest_full_path = _get_full_path(working_directory, dest_path)
+    affected_files = []
 
     if not os.path.exists(source_full_path):
-        return f"Source path '{source_path}' does not exist"
+        return {
+            "message": f"Source path '{source_path}' does not exist",
+            "affected_files": [],
+        }
 
     is_file = os.path.isfile(source_full_path)
 
     if os.path.exists(dest_full_path):
-        return f"Destination path '{dest_path}' already exists"
+        return {
+            "message": f"Destination path '{dest_path}' already exists",
+            "affected_files": [],
+        }
 
     if is_file:
         os.makedirs(os.path.dirname(dest_full_path), exist_ok=True)
         shutil.copy2(source_full_path, dest_full_path)
-        return f"Copied file from '{source_path}' to '{dest_path}'"
+        affected_files.extend([source_full_path, dest_full_path])
+        return {
+            "message": f"Copied file from '{source_path}' to '{dest_path}'",
+            "affected_files": affected_files,
+        }
     else:
         shutil.copytree(source_full_path, dest_full_path)
-        return f"Copied folder from '{source_path}' to '{dest_path}'"
+        affected_files.extend([source_full_path, dest_full_path])
+        return {
+            "message": f"Copied folder from '{source_path}' to '{dest_path}'",
+            "affected_files": affected_files,
+        }
 
 
 @tool
@@ -106,7 +133,7 @@ def move_item(
     working_directory: str,
     source_path: str,
     dest_path: str,
-) -> str:
+) -> dict:
     """Move a file or folder to a new location.
 
     Args:
@@ -115,23 +142,34 @@ def move_item(
         dest_path (str): Destination path where item should be moved, relative to working_directory
 
     Returns:
-        str: Success/failure message describing the operation result
+        dict: Dictionary containing success/failure message and affected files
     """
     source_full_path = _get_full_path(working_directory, source_path)
     dest_full_path = _get_full_path(working_directory, dest_path)
+    affected_files = []
 
     if not os.path.exists(source_full_path):
-        return f"Source path '{source_path}' does not exist"
+        return {
+            "message": f"Source path '{source_path}' does not exist",
+            "affected_files": [],
+        }
 
     is_file = os.path.isfile(source_full_path)
 
     if os.path.exists(dest_full_path):
-        return f"Destination path '{dest_path}' already exists"
+        return {
+            "message": f"Destination path '{dest_path}' already exists",
+            "affected_files": [],
+        }
 
     os.makedirs(os.path.dirname(dest_full_path), exist_ok=True)
     shutil.move(source_full_path, dest_full_path)
+    affected_files.extend([source_full_path, dest_full_path])
     item_str = "file" if is_file else "folder"
-    return f"Moved {item_str} from '{source_path}' to '{dest_path}'"
+    return {
+        "message": f"Moved {item_str} from '{source_path}' to '{dest_path}'",
+        "affected_files": affected_files,
+    }
 
 
 @tool
@@ -139,7 +177,7 @@ def delete_item(
     working_directory: str,
     path: str,
     item_type: Optional[Literal["file", "folder"]] = None,
-) -> str:
+) -> dict:
     """Delete a file or folder from the filesystem.
 
     Args:
@@ -148,29 +186,34 @@ def delete_item(
         item_type (Optional[Literal["file", "folder"]]): Specify if deleting a file or folder. If None, will detect automatically
 
     Returns:
-        str: Success/failure message describing the operation result
+        dict: Dictionary containing success/failure message and affected files
     """
     full_path = _get_full_path(working_directory, path)
+    affected_files = []
 
     if not os.path.exists(full_path):
-        return f"Path '{path}' does not exist"
+        return {"message": f"Path '{path}' does not exist", "affected_files": []}
 
     is_file = os.path.isfile(full_path)
     if item_type and (
         (item_type == "file" and not is_file) or (item_type == "folder" and is_file)
     ):
-        return f"Path '{path}' is not a {item_type}"
+        return {"message": f"Path '{path}' is not a {item_type}", "affected_files": []}
 
+    affected_files.append(full_path)
     if is_file:
         os.remove(full_path)
-        return f"Deleted file '{path}'"
+        return {"message": f"Deleted file '{path}'", "affected_files": affected_files}
     else:
         shutil.rmtree(full_path)
-        return f"Deleted folder '{path}' and its contents"
+        return {
+            "message": f"Deleted folder '{path}' and its contents",
+            "affected_files": affected_files,
+        }
 
 
 @tool
-def rename_item(working_directory: str, old_path: str, new_name: str) -> str:
+def rename_item(working_directory: str, old_path: str, new_name: str) -> dict:
     """Rename a file or folder.
 
     Args:
@@ -179,20 +222,28 @@ def rename_item(working_directory: str, old_path: str, new_name: str) -> str:
         new_name (str): New name for the item (not full path, just the name)
 
     Returns:
-        str: Success/failure message describing the operation result
+        dict: Dictionary containing success/failure message and affected files
     """
     full_old_path = _get_full_path(working_directory, old_path)
     new_path = os.path.join(os.path.dirname(full_old_path), new_name)
+    affected_files = []
 
     if not os.path.exists(full_old_path):
-        return f"Path '{old_path}' does not exist"
+        return {"message": f"Path '{old_path}' does not exist", "affected_files": []}
 
     if os.path.exists(new_path):
-        return f"Cannot rename: destination '{new_name}' already exists"
+        return {
+            "message": f"Cannot rename: destination '{new_name}' already exists",
+            "affected_files": [],
+        }
 
     os.rename(full_old_path, new_path)
-    item_type = "file" if os.path.isfile(full_old_path) else "folder"
-    return f"Renamed {item_type} '{old_path}' to '{new_name}'"
+    affected_files.extend([full_old_path, new_path])
+    item_type = "file" if os.path.isfile(new_path) else "folder"
+    return {
+        "message": f"Renamed {item_type} '{old_path}' to '{new_name}'",
+        "affected_files": affected_files,
+    }
 
 
 @tool
@@ -275,7 +326,7 @@ def get_content(working_directory: str, path: str) -> str:
 
 
 @tool
-def change_directory(working_directory: str, new_path: Optional[str] = None) -> str:
+def change_directory(working_directory: str, new_path: Optional[str] = None) -> dict:
     """Change the current working directory to a new path.
 
     Args:
@@ -283,15 +334,13 @@ def change_directory(working_directory: str, new_path: Optional[str] = None) -> 
         new_path (Optional[str]): New path to change to. Can be absolute or relative to current working directory
 
     Returns:
-        str: JSON string containing the new working directory and status message
+        dict: Dictionary containing the new working directory and status message
     """
     if new_path is None:
-        return json.dumps(
-            {
-                "working_directory": working_directory,
-                "message": f"Current directory: {working_directory}",
-            }
-        )
+        return {
+            "working_directory": working_directory,
+            "message": f"Current directory: {working_directory}",
+        }
 
     # Handle absolute paths correctly
     if os.path.isabs(new_path):
@@ -299,12 +348,10 @@ def change_directory(working_directory: str, new_path: Optional[str] = None) -> 
             if not os.path.commonpath([new_path]).startswith(
                 os.path.commonpath([WORKING_DIRECTORY])
             ):
-                return json.dumps(
-                    {
-                        "working_directory": working_directory,
-                        "message": f"Cannot change to directory outside of workspace: {new_path}",
-                    }
-                )
+                return {
+                    "working_directory": working_directory,
+                    "message": f"Cannot change to directory outside of workspace: {new_path}",
+                }
         new_full_path = new_path
     else:
         new_full_path = _get_full_path(working_directory, new_path)
@@ -313,39 +360,29 @@ def change_directory(working_directory: str, new_path: Optional[str] = None) -> 
 
     try:
         if not os.path.exists(new_full_path):
-            return json.dumps(
-                {
-                    "working_directory": working_directory,
-                    "message": f"Path '{new_path}' does not exist",
-                }
-            )
+            return {
+                "working_directory": working_directory,
+                "message": f"Path '{new_path}' does not exist",
+            }
 
         if not os.path.isdir(new_full_path):
-            return json.dumps(
-                {
-                    "working_directory": working_directory,
-                    "message": f"Path '{new_path}' is not a directory",
-                }
-            )
+            return {
+                "working_directory": working_directory,
+                "message": f"Path '{new_path}' is not a directory",
+            }
 
         os.listdir(new_full_path)
-        return json.dumps(
-            {
-                "working_directory": new_full_path,
-                "message": f"Changed directory to: {new_full_path}",
-            }
-        )
+        return {
+            "working_directory": new_full_path,
+            "message": f"Changed directory to: {new_full_path}",
+        }
     except PermissionError:
-        return json.dumps(
-            {
-                "working_directory": working_directory,
-                "message": f"Permission denied: cannot access '{new_path}'",
-            }
-        )
+        return {
+            "working_directory": working_directory,
+            "message": f"Permission denied: cannot access '{new_path}'",
+        }
     except Exception as e:
-        return json.dumps(
-            {
-                "working_directory": working_directory,
-                "message": f"Error changing to '{new_path}': {str(e)}",
-            }
-        )
+        return {
+            "working_directory": working_directory,
+            "message": f"Error changing to '{new_path}': {str(e)}",
+        }
