@@ -1,9 +1,10 @@
 import os
 import json
 import re
-from typing import Dict, Optional, Any
+from typing import Dict, Optional, Any, Annotated
 import boto3
 from langchain_core.tools import tool
+from langgraph.prebuilt import InjectedState
 
 from utils import truncate_text
 from config import AWS_DEFAULT_REGION, BEDROCK_TEXT_MODEL_ID, DEBUG_LLM
@@ -63,7 +64,6 @@ class TextAnalyzer:
         Returns:
             str: The model's response
         """
-        # Print the prompt in orange
         if DEBUG_LLM:
             print("\033[38;5;208m=== PROMPT ===\n" + prompt + "\n=============\033[0m")
 
@@ -87,10 +87,8 @@ class TextAnalyzer:
             )
 
             response_body = json.loads(response.get("body").read())
-            # Extract the response text from the Claude 3 format
             response_text = response_body.get("content", [{}])[0].get("text", "")
 
-            # Print the response in orange
             if DEBUG_LLM:
                 print(
                     "\033[38;5;208m=== RESPONSE ===\n"
@@ -314,6 +312,7 @@ def analyze_document(
     subject: bool = False,
     summary: bool = False,
     question: Optional[str] = None,
+    state: Annotated[Dict[str, Any], InjectedState] = None,
 ) -> Dict[str, Any]:
     """Analyze a document using Amazon Bedrock's Titan model.
 
@@ -326,6 +325,7 @@ def analyze_document(
         subject (bool): Whether to extract the subject matter from the document
         summary (bool): Whether to create a summary of the document
         question (Optional[str]): A specific question to answer about the document
+        state (Annotated[Dict[str, Any], InjectedState]): The current state of the model, injected by LangGraph
 
     Returns:
         Dict[str, Any]: Dictionary containing analysis results and metadata updates
@@ -340,48 +340,19 @@ def analyze_document(
     # Extract the actual content from the result
     content = content_result.replace(f"Content of '{file_path}':\n", "", 1)
 
-    # Truncate content to a reasonable length for the model
-    truncated_content = truncate_text(content, max_words=2000, max_chars=8000)
-
-    # Get the filename from the path
-    filename = os.path.basename(file_path)
-
-    # Initialize the analyzer
-    analyzer = TextAnalyzer()
-
-    # Build a dynamic prompt based on requested analyses
-    prompt = analyzer.build_dynamic_prompt(
-        truncated_content,
-        filename,
-        categorize=categorize,
-        get_title=title,
-        get_date=date,
-        get_subject=subject,
-        get_summary=summary,
-        question=question,
-    )
-
-    # Invoke the model with the combined prompt
-    response = analyzer.invoke_model(prompt)
-
-    # Parse the response to extract information from XML tags
-    results = analyzer.parse_response(
-        response,
-        categorize=categorize,
-        get_title=title,
-        get_date=date,
-        get_subject=subject,
-        get_summary=summary,
-        question=question,
-    )
-
-    # Create metadata update with only requested fields
+    # Initialize metadata update with existing data if available
     from datetime import datetime
 
-    metadata_update = {file_path: {"last_analyzed": datetime.now().isoformat()}}
+    existing_metadata = {}
+    if state and "file_metadata" in state and file_path in state["file_metadata"]:
+        existing_metadata = state["file_metadata"][file_path].copy()
+        print(f"\nRetrieved from state for {file_path}:")
+        for field, value in existing_metadata.items():
+            if field != "last_analyzed":  # Skip timestamp
+                print(f"  - {field}: {value}")
 
-    # Map requested fields to results and filter only requested items
-    field_mapping = {
+    # Determine which fields need to be analyzed
+    fields_to_analyze = {
         "category": categorize,
         "title": title,
         "date": date,
@@ -389,14 +360,82 @@ def analyze_document(
         "summary": summary,
     }
 
-    # Add only requested fields that exist in results
-    for field, requested in field_mapping.items():
-        if requested and field in results:
-            metadata_update[file_path][field] = results[field]
+    # Filter out fields that already exist in metadata
+    fields_to_analyze = {
+        field: requested
+        for field, requested in fields_to_analyze.items()
+        if requested and field not in existing_metadata
+    }
 
-    # Handle question separately due to its different structure
-    if question and "question_answer" in results:
-        metadata_update[file_path]["question_answer"] = results["question_answer"]
+    # Check if we need to analyze anything
+    need_analysis = any(fields_to_analyze.values()) or (question is not None)
+
+    # Initialize results with existing metadata
+    results = existing_metadata.copy()
+
+    if need_analysis:
+        if DEBUG_LLM:
+            print(f"\nAnalyzing with model for {file_path}:")
+            if fields_to_analyze:
+                print("  Fields to analyze:")
+                for field, requested in fields_to_analyze.items():
+                    if requested:
+                        print(f"    - {field}")
+            if question:
+                print(f"  Question to answer: {question}")
+
+        # Truncate content to a reasonable length for the model
+        truncated_content = truncate_text(content, max_words=2000, max_chars=8000)
+
+        # Get the filename from the path
+        filename = os.path.basename(file_path)
+
+        # Initialize the analyzer
+        analyzer = TextAnalyzer()
+
+        # Build a dynamic prompt based on requested analyses
+        prompt = analyzer.build_dynamic_prompt(
+            truncated_content,
+            filename,
+            categorize=fields_to_analyze.get("category", False),
+            get_title=fields_to_analyze.get("title", False),
+            get_date=fields_to_analyze.get("date", False),
+            get_subject=fields_to_analyze.get("subject", False),
+            get_summary=fields_to_analyze.get("summary", False),
+            question=question,
+        )
+
+        # Invoke the model with the combined prompt
+        response = analyzer.invoke_model(prompt)
+
+        # Parse the response to extract information from XML tags
+        new_results = analyzer.parse_response(
+            response,
+            categorize=fields_to_analyze.get("category", False),
+            get_title=fields_to_analyze.get("title", False),
+            get_date=fields_to_analyze.get("date", False),
+            get_subject=fields_to_analyze.get("subject", False),
+            get_summary=fields_to_analyze.get("summary", False),
+            question=question,
+        )
+        if DEBUG_LLM:
+            print("\n  Model results:")
+            for field, value in new_results.items():
+                if field != "last_analyzed":  # Skip timestamp
+                    print(f"    - {field}: {value}")
+
+        # Update results with new findings
+        results.update(new_results)
+    elif DEBUG_LLM:
+        print(
+            f"\nNo analysis needed for {file_path} - all requested fields exist in state"
+        )
+
+    # Always update the last_analyzed timestamp
+    results["last_analyzed"] = datetime.now().isoformat()
+
+    # Create the metadata update
+    metadata_update = {file_path: results}
 
     return {
         "message": "Document analyzed successfully",
