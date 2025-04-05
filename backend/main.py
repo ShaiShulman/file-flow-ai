@@ -23,8 +23,9 @@ def main():
     agent = graph
     thread_id = str(uuid.uuid4())
 
-    # Initialize working directory from config
     working_directory = config.WORKING_DIRECTORY
+    affected_files = []
+    file_metadata = {}
 
     memory_config = {
         "configurable": {
@@ -36,7 +37,6 @@ def main():
     print("Type 'exit' to quit")
 
     while True:
-        # Include current working directory in the prompt
         user_input = input(
             f"\nWhat would you like to do? [Current dir: {working_directory}] "
         ).strip()
@@ -49,7 +49,8 @@ def main():
             {
                 "messages": [("user", user_input)],
                 "working_directory": working_directory,
-                "affected_files": [],
+                "affected_files": affected_files,
+                "file_metadata": file_metadata,
             },
             memory_config,
             stream_mode="values",
@@ -138,7 +139,9 @@ def main():
                 and last_event["working_directory"] != working_directory
             ):
                 working_directory = last_event["working_directory"]
+
                 print(f"Working directory changed to: {working_directory}")
+            affected_files = last_event["affected_files"]
 
             # Display folder content
             print(

@@ -124,12 +124,24 @@ def extract_tool_result(state) -> dict:
         dict: The updated state with any changes from tool execution.
     """
     last_message = state["messages"][-1]
-    if (
-        hasattr(last_message, "name")
-        # and last_message.name in sensitive_tool_names
-        and last_message.content
-    ):
-        content_dict = json.loads(last_message.content)
+    if hasattr(last_message, "name") and last_message.content:
+        # Handle both string content (needs JSON parsing) and dict content
+        content_dict = {}
+        if isinstance(last_message.content, str):
+            try:
+                content_dict = json.loads(last_message.content)
+            except json.JSONDecodeError:
+                # If not valid JSON, use the content as is
+                content_dict = {"message": last_message.content}
+        else:
+            # Content is already a dictionary
+            content_dict = last_message.content
+
+        # Handle file metadata updates from analyze_document
+        if "file_metadata" in content_dict:
+            return {"file_metadata": content_dict["file_metadata"]}
+
+        # Handle affected files updates
         if "affected_files" in content_dict:
             return {
                 "affected_files": state["affected_files"]

@@ -309,33 +309,33 @@ def analyze_document(
     working_directory: str,
     file_path: str,
     categorize: bool = False,
-    get_title: bool = False,
-    get_date: bool = False,
-    get_subject: bool = False,
-    get_summary: bool = False,
+    title: bool = False,
+    date: bool = False,
+    subject: bool = False,
+    summary: bool = False,
     question: Optional[str] = None,
-) -> str:
+) -> Dict[str, Any]:
     """Analyze a document using Amazon Bedrock's Titan model.
 
     Args:
         working_directory (str): Base directory where operations are performed
         file_path (str): Path to the file to analyze, relative to working_directory
         categorize (bool): Whether to categorize the document based on available categories
-        get_title (bool): Whether to extract the title from the document
-        get_date (bool): Whether to extract the date from the document
-        get_subject (bool): Whether to extract the subject matter from the document
-        get_summary (bool): Whether to create a summary of the document
+        title (bool): Whether to extract the title from the document
+        date (bool): Whether to extract the date from the document
+        subject (bool): Whether to extract the subject matter from the document
+        summary (bool): Whether to create a summary of the document
         question (Optional[str]): A specific question to answer about the document
 
     Returns:
-        str: JSON string containing the analysis results
+        Dict[str, Any]: Dictionary containing analysis results and metadata updates
     """
     # Get the file content
     content_result = get_content(working_directory, file_path)
 
     # Check if there was an error getting the content
     if content_result.startswith("Path") or content_result.startswith("Error"):
-        return json.dumps({"error": content_result})
+        return {"message": content_result, "file_metadata": {}}
 
     # Extract the actual content from the result
     content = content_result.replace(f"Content of '{file_path}':\n", "", 1)
@@ -354,10 +354,10 @@ def analyze_document(
         truncated_content,
         filename,
         categorize=categorize,
-        get_title=get_title,
-        get_date=get_date,
-        get_subject=get_subject,
-        get_summary=get_summary,
+        get_title=title,
+        get_date=date,
+        get_subject=subject,
+        get_summary=summary,
         question=question,
     )
 
@@ -368,12 +368,37 @@ def analyze_document(
     results = analyzer.parse_response(
         response,
         categorize=categorize,
-        get_title=get_title,
-        get_date=get_date,
-        get_subject=get_subject,
-        get_summary=get_summary,
+        get_title=title,
+        get_date=date,
+        get_subject=subject,
+        get_summary=summary,
         question=question,
     )
 
-    # Return the results as a JSON string
-    return json.dumps(results, indent=2)
+    # Create metadata update with only requested fields
+    from datetime import datetime
+
+    metadata_update = {file_path: {"last_analyzed": datetime.now().isoformat()}}
+
+    # Map requested fields to results and filter only requested items
+    field_mapping = {
+        "category": categorize,
+        "title": title,
+        "date": date,
+        "subject": subject,
+        "summary": summary,
+    }
+
+    # Add only requested fields that exist in results
+    for field, requested in field_mapping.items():
+        if requested and field in results:
+            metadata_update[file_path][field] = results[field]
+
+    # Handle question separately due to its different structure
+    if question and "question_answer" in results:
+        metadata_update[file_path]["question_answer"] = results["question_answer"]
+
+    return {
+        "message": "Document analyzed successfully",
+        "file_metadata": metadata_update,
+    }
