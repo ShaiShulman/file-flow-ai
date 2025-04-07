@@ -5,11 +5,14 @@ from tools import get_directory_tree
 import config
 from langchain_core.messages.ai import AIMessage
 from langchain_core.messages import ToolMessage
+from langchain_core.runnables import RunnableConfig
 
 from graph import graph
 
 # Suppress the specific deprecation warning from botocore
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="botocore.auth")
+
+graph_config = RunnableConfig(recursion_limit=config.RECURSION_LIMIT)
 
 
 def setup_aws_credentials():
@@ -30,7 +33,8 @@ def main():
     memory_config = {
         "configurable": {
             "thread_id": thread_id,
-        }
+        },
+        "recursion_limit": config.RECURSION_LIMIT,
     }
 
     print(f"Folder Bot initialized! Working directory: {working_directory}")
@@ -54,12 +58,12 @@ def main():
             },
             memory_config,
             stream_mode="values",
+            # config=graph_config,
         )
 
         last_event = None
         event_counter = 1
         for event in events:
-            # Format the event as a string with proper line breaks
             event_str = f"\nEvent {event_counter}:"
 
             # Handle different types of events

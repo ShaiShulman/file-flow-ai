@@ -1,12 +1,15 @@
 import os
+import re
 import shutil
 import json
 from typing import List, Optional, Union, Literal
 from markitdown import MarkItDown
 from langchain_core.tools import tool
+import olefile
 
 from utils import truncate_text
 from config import WORKING_DIRECTORY, ALLOW_EXTERNAL_DIRECTORIES
+from content_extractor import get_content
 
 
 def _get_full_path(working_directory: str, folder_path: Optional[str] = None) -> str:
@@ -290,39 +293,6 @@ def list_items(
         return f"No {item_type} found in {path if path else 'working directory'}"
 
     return "\n".join(sorted(items))
-
-
-def get_content(working_directory: str, path: str) -> str:
-    """Read and return the content of a file.
-
-    Args:
-        working_directory (str): Base directory where operations are performed
-        path (str): Path to the file, relative to working_directory
-
-    Returns:
-        str: File content or error message
-    """
-    supported_extensions = (".pptx", ".docx", ".pdf", ".jpg", ".jpeg", ".png")
-    full_path = _get_full_path(working_directory, path)
-
-    if not os.path.exists(full_path):
-        return f"Path '{path}' does not exist"
-
-    if not os.path.isfile(full_path):
-        return f"Path '{path}' is not a file"
-
-    file_ext = os.path.splitext(full_path)[1].lower()
-    if file_ext not in supported_extensions:
-        try:
-            with open(full_path, "r", encoding="utf-8") as f:
-                content = f.read()
-                return f"Content of '{path}':\n{content}"
-        except Exception as e:
-            return f"Error reading file '{path}': {str(e)}"
-    else:
-        md = MarkItDown()
-        result = md.convert(full_path)
-        return f"Content of '{path}':\n{truncate_text(result.text_content)}"
 
 
 @tool

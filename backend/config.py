@@ -27,6 +27,9 @@ WORKING_DIRECTORY = os.path.join(
 # Allow changing to directories anywhere on the system
 ALLOW_EXTERNAL_DIRECTORIES = True
 
+# Recursion limit for the graph
+RECURSION_LIMIT = 50
+
 # Agent Configuration
 AGENT_VERBOSE = True
 
