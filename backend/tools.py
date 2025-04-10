@@ -38,15 +38,15 @@ safe_tools = [
     list_categories,
     get_category,
     analyze_document,
-    # Sensitive tools
+]
+
+# Sensitive tools are operations that modify the file system
+sensitive_tools = [
     delete_item,
     move_item,
     copy_item,
     create_item,
 ]
-
-# Sensitive tools are operations that modify the file system
-sensitive_tools = []
 
 # Create a set of sensitive tool names for quick lookup
 sensitive_tool_names = {t.name for t in sensitive_tools}
@@ -137,17 +137,25 @@ def extract_tool_result(state) -> dict:
             # Content is already a dictionary
             content_dict = last_message.content
 
+        # Initialize the return dictionary
+        result = {}
+
         # Handle file metadata updates from analyze_document
         if "file_metadata" in content_dict:
-            return {"file_metadata": content_dict["file_metadata"]}
+            result["file_metadata"] = content_dict["file_metadata"]
+
+        if "total_tokens" in content_dict:
+            result["analysis_tokens"] = (
+                state["analysis_tokens"] + content_dict["total_tokens"]
+            )
 
         # Handle affected files updates
         if "affected_files" in content_dict:
-            return {
-                "affected_files": state["affected_files"]
-                + content_dict["affected_files"]
-            }
-    return {}
+            result["affected_files"] = (
+                state["affected_files"] + content_dict["affected_files"]
+            )
+
+    return result
 
 
 def update_working_directory(state) -> dict:

@@ -55,14 +55,14 @@ class TextAnalyzer:
         self.client = boto3.client("bedrock-runtime", region_name=AWS_DEFAULT_REGION)
         self.categories_manager = categories_manager
 
-    def invoke_model(self, prompt: str) -> str:
+    def invoke_model(self, prompt: str) -> tuple[str, int]:
         """Invoke the Bedrock model with the given prompt.
 
         Args:
             prompt (str): The prompt to send to the model
 
         Returns:
-            str: The model's response
+            tuple[str, int]: A tuple containing the model's response text and total tokens used
         """
         if DEBUG_LLM:
             print("\033[38;5;208m=== PROMPT ===\n" + prompt + "\n=============\033[0m")
@@ -88,6 +88,10 @@ class TextAnalyzer:
 
             response_body = json.loads(response.get("body").read())
             response_text = response_body.get("content", [{}])[0].get("text", "")
+            usage = response_body.get("usage", {})
+
+            # Calculate total tokens
+            total_tokens = usage.get("input_tokens", 0) + usage.get("output_tokens", 0)
 
             if DEBUG_LLM:
                 print(
@@ -95,15 +99,18 @@ class TextAnalyzer:
                     + response_text
                     + "\n==============\033[0m"
                 )
+                print(
+                    f"\033[38;5;208m=== TOTAL TOKENS USED ===\n{total_tokens}\n==============\033[0m"
+                )
 
-            return response_text
+            return response_text, total_tokens
         except Exception as e:
             error_msg = f"Error invoking Bedrock model: {str(e)}"
             if DEBUG_LLM:
                 print(
                     "\033[38;5;208m=== ERROR ===\n" + error_msg + "\n===========\033[0m"
                 )
-            return error_msg
+            return error_msg, 0
 
     def build_instruction_section(
         self,
@@ -406,7 +413,7 @@ def analyze_document(
         )
 
         # Invoke the model with the combined prompt
-        response = analyzer.invoke_model(prompt)
+        response, total_tokens = analyzer.invoke_model(prompt)
 
         # Parse the response to extract information from XML tags
         new_results = analyzer.parse_response(
@@ -423,9 +430,11 @@ def analyze_document(
             for field, value in new_results.items():
                 if field != "last_analyzed":  # Skip timestamp
                     print(f"    - {field}: {value}")
+            print(f"  Total tokens used: {total_tokens}")
 
         # Update results with new findings
         results.update(new_results)
+
     elif DEBUG_LLM:
         print(
             f"\nNo analysis needed for {file_path} - all requested fields exist in state"
@@ -440,4 +449,5 @@ def analyze_document(
     return {
         "message": "Document analyzed successfully",
         "file_metadata": metadata_update,
+        "total_tokens": total_tokens,
     }

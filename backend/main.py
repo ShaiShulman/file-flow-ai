@@ -4,8 +4,8 @@ import warnings
 from tools import get_directory_tree
 import config
 from langchain_core.messages.ai import AIMessage
-from langchain_core.messages import ToolMessage
 from langchain_core.runnables import RunnableConfig
+from langgraph.errors import GraphRecursionError
 
 from graph import graph
 
@@ -29,6 +29,7 @@ def main():
     working_directory = config.WORKING_DIRECTORY
     affected_files = []
     file_metadata = {}
+    analysis_tokens = 0
 
     memory_config = {
         "configurable": {
@@ -48,13 +49,13 @@ def main():
         if user_input.lower() == "exit":
             break
 
-        # Include both messages and working_directory in the initial state
         events = agent.stream(
             {
                 "messages": [("user", user_input)],
                 "working_directory": working_directory,
                 "affected_files": affected_files,
                 "file_metadata": file_metadata,
+                "analysis_tokens": analysis_tokens,
             },
             memory_config,
             stream_mode="values",
@@ -63,6 +64,7 @@ def main():
 
         last_event = None
         event_counter = 1
+
         for event in events:
             event_str = f"\nEvent {event_counter}:"
 
@@ -71,6 +73,7 @@ def main():
                 for key, value in event.items():
                     if key == "messages":
                         event_str += "\n  Messages:"
+                        instruction_tokens = 0
                         for msg_idx, msg in enumerate(value, 1):
                             msg_type = (
                                 msg.__class__.__name__
@@ -78,6 +81,10 @@ def main():
                                 else type(msg).__name__
                             )
                             msg_str = f"\n    - [{msg_idx}] [{msg_type}] {msg}"
+                            if msg_type == "AIMessage":
+                                instruction_tokens += msg.additional_kwargs.get(
+                                    "usage", {}
+                                ).get("total_tokens", 0)
                             # Color individual messages red if they contain the word error, blue otherwise
                             if "error" in str(msg).lower():
                                 msg_str = (
@@ -102,39 +109,39 @@ def main():
             last_event = event
 
         # Handle interrupts for sensitive tools
-        snapshot = agent.get_state(memory_config)
-        while snapshot and snapshot.next:
-            print(
-                "\nSensitive operation detected! This operation will modify the file system."
-            )
-            user_approval = (
-                input(
-                    "Do you approve this action? (y/n) or provide alternative instructions: "
-                )
-                .strip()
-                .lower()
-            )
+        # snapshot = agent.get_state(memory_config)
+        # while snapshot and snapshot.next:
+        #     print(
+        #         "\nSensitive operation detected! This operation will modify the file system."
+        #     )
+        #     user_approval = (
+        #         input(
+        #             "Do you approve this action? (y/n) or provide alternative instructions: "
+        #         )
+        #         .strip()
+        #         .lower()
+        #     )
 
-            if user_approval == "y":
-                result = agent.invoke(None, memory_config)
-            else:
-                if user_approval == "n":
-                    message = "Operation cancelled by user."
-                else:
-                    message = f"Operation modified: {user_approval}"
+        #     if user_approval == "y":
+        #         result = agent.invoke(None, memory_config)
+        #     else:
+        #         if user_approval == "n":
+        #             message = "Operation cancelled by user."
+        #         else:
+        #             message = f"Operation modified: {user_approval}"
 
-                result = agent.invoke(
-                    {
-                        "messages": [
-                            ToolMessage(
-                                tool_call_id=event["messages"][-1].tool_calls[0]["id"],
-                                content=f"API call modified. Reason: {message}",
-                            )
-                        ]
-                    },
-                    memory_config,
-                )
-            snapshot = agent.get_state(memory_config)
+        #         result = agent.invoke(
+        #             {
+        #                 "messages": [
+        #                     ToolMessage(
+        #                         tool_call_id=event["messages"][-1].tool_calls[0]["id"],
+        #                         content=f"API call modified. Reason: {message}",
+        #                     )
+        #                 ]
+        #             },
+        #             memory_config,
+        #         )
+        #     snapshot = agent.get_state(memory_config)
 
         if last_event:
             # Update working directory if it changed during execution
@@ -146,6 +153,7 @@ def main():
 
                 print(f"Working directory changed to: {working_directory}")
             affected_files = last_event["affected_files"]
+            analysis_tokens = last_event["analysis_tokens"]
 
             # Display folder content
             print(
@@ -154,6 +162,9 @@ def main():
                 + "\033[0m"
                 + "\n"
             )
+
+            print(f"Instruction tokens used: {instruction_tokens}")
+            print(f"Analysis tokens used: {analysis_tokens}")
 
             # Show message from last tool
             if (

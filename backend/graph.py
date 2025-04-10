@@ -90,5 +90,5 @@ memory = MemorySaver()
 
 graph = builder.compile(
     checkpointer=memory,
-    interrupt_before=["sensitive_tools"],
+    # interrupt_before=["sensitive_tools"],
 )

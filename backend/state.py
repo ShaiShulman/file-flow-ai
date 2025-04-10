@@ -7,5 +7,6 @@ from reducers import AccumulatorList, FlexibleMap
 class State(TypedDict):
     messages: Annotated[list[AnyMessage], add_messages]
     working_directory: str
+    analysis_tokens: int
     affected_files: AccumulatorList[str]
     file_metadata: FlexibleMap
