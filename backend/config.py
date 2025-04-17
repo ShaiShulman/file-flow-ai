@@ -1,7 +1,8 @@
 import os
 
 # Run Configuration
-DEBUG_LLM = True
+DEBUG_LLM = False
+DEBUG_GRAPH = True
 
 # AWS Bedrock Configuration
 AWS_DEFAULT_REGION = "us-east-1"
