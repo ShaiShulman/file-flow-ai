@@ -27,6 +27,8 @@ from text_analysis import (
     analyze_document,
 )
 
+from action_types import ActionInfo, ActionType
+
 # Safe tools are read-only operations that don't modify the file system
 safe_tools = [
     list_items,
@@ -123,22 +125,37 @@ def extract_tool_result(state) -> dict:
     Returns:
         dict: The updated state with any changes from tool execution.
     """
-    last_message = state["messages"][-1]
-    if hasattr(last_message, "name") and last_message.content:
+    messages = state["messages"]
+    result = {}
+
+    # Process messages in reverse order until we hit a non-AI message
+    for msg in reversed(messages):
+        # Check if this is an AI message with tool calls
+        if not hasattr(msg, "__class__") or not type(msg).__name__ == "ToolMessage":
+            break
+
+        if not msg.content:
+            continue
+
         # Handle both string content (needs JSON parsing) and dict content
         content_dict = {}
-        if isinstance(last_message.content, str):
+        if isinstance(msg.content, str):
             try:
-                content_dict = json.loads(last_message.content)
+                # First parse the outer message
+                outer_dict = json.loads(msg.content)
+                # If the message field contains a string that looks like JSON, parse it too
+                if "message" in outer_dict and isinstance(outer_dict["message"], str):
+                    try:
+                        inner_dict = json.loads(outer_dict["message"].replace("'", '"'))
+                        content_dict = inner_dict
+                    except json.JSONDecodeError:
+                        content_dict = outer_dict
             except json.JSONDecodeError:
                 # If not valid JSON, use the content as is
-                content_dict = {"message": last_message.content}
+                content_dict = {"message": msg.content}
         else:
             # Content is already a dictionary
-            content_dict = last_message.content
-
-        # Initialize the return dictionary
-        result = {}
+            content_dict = msg.content
 
         # Handle file metadata updates from analyze_document
         if "file_metadata" in content_dict:
@@ -151,9 +168,15 @@ def extract_tool_result(state) -> dict:
 
         # Handle affected files updates
         if "affected_files" in content_dict:
-            result["affected_files"] = (
-                state["affected_files"] + content_dict["affected_files"]
-            )
+            if "affected_files" not in result:
+                result["affected_files"] = []
+            result["affected_files"].extend(content_dict["affected_files"])
+
+        # Handle actions from sensitive tools
+        if "action" in content_dict and content_dict["action"] is not None:
+            if "actions" not in result:
+                result["actions"] = []
+            result["actions"].append(ActionInfo.from_dict(content_dict["action"]))
 
     return result
 
@@ -208,4 +231,12 @@ def process_tools_output(state):
     """Handle the output from tools execution and update state accordingly."""
     working_dir_update = update_working_directory(state)
     tool_result = extract_tool_result(state)
+
+    # # If we have new actions, add them to the state's actions
+    # if "actions" in tool_result:
+    #     if "actions" not in state:
+    #         state["actions"] = []
+    #     # Let the AccumulatorList handle the accumulation
+    #     state["actions"].extend(tool_result["actions"])
+
     return {**working_dir_update, **tool_result}

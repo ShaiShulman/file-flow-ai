@@ -1,10 +1,11 @@
 import uuid
 from dataclasses import dataclass
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from langchain_core.messages.ai import AIMessage
 from tools import get_directory_tree
 import config
 from graph import graph
+from action_types import ActionInfo
 
 
 @dataclass
@@ -15,6 +16,7 @@ class RunResult:
     state: Dict[str, Any]
     analysis_tokens: int
     instruction_tokens: int
+    actions: List[ActionInfo]
 
 
 class AgentRunner:
@@ -30,6 +32,7 @@ class AgentRunner:
         self.affected_files = []
         self.file_metadata = {}
         self.analysis_tokens = 0
+        self.actions = []
         self.thread_id = str(uuid.uuid4())
         self.agent = graph
 
@@ -59,6 +62,9 @@ class AgentRunner:
         Returns:
             RunResult: A structured result containing the last AI message, state, and token counts
         """
+        # Clear actions at the start of each run
+        self.actions = []
+
         events = self.agent.stream(
             {
                 "messages": [("user", user_input)],
@@ -73,6 +79,7 @@ class AgentRunner:
 
         last_event = None
         event_counter = 1
+        self.actions = []
 
         for event in events:
             event_str = f"\nEvent {event_counter}:"
@@ -106,6 +113,9 @@ class AgentRunner:
                             event_str += msg_str
                     elif key == "working_directory":
                         event_str += f"\n  Working Directory: {value}"
+                    elif key == "actions":
+                        # Add new actions to the list
+                        self.actions = value
                     else:
                         event_str += f"\n  {key}: {value}"
             else:
@@ -151,6 +161,7 @@ class AgentRunner:
                 "affected_files": self.affected_files,
                 "file_metadata": self.file_metadata,
                 "analysis_tokens": self.analysis_tokens,
+                "actions": self.actions,
             }
 
             return RunResult(
@@ -158,6 +169,7 @@ class AgentRunner:
                 state=state,
                 analysis_tokens=self.analysis_tokens,
                 instruction_tokens=instruction_tokens,
+                actions=self.actions,
             )
 
         return RunResult(
@@ -165,4 +177,5 @@ class AgentRunner:
             state={},
             analysis_tokens=0,
             instruction_tokens=0,
+            actions=[],
         )

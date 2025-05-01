@@ -37,6 +37,11 @@ def main():
             f"Total tokens used: {result.analysis_tokens + result.instruction_tokens}"
         )
 
+        if result.actions:
+            print("\nActions performed:")
+            for action in result.actions:
+                print(f"  - {action.description}")
+
         # Update working directory from result state
         working_directory = result.state["working_directory"]
 
