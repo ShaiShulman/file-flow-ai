@@ -29,7 +29,7 @@ WORKING_DIRECTORY = os.path.join(
 ALLOW_EXTERNAL_DIRECTORIES = True
 
 # Recursion limit for the graph
-RECURSION_LIMIT = 50
+RECURSION_LIMIT = 500
 
 # Agent Configuration
 AGENT_VERBOSE = True
