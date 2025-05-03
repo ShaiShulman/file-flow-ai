@@ -6,6 +6,7 @@ from tools import get_directory_tree
 import config
 from graph import graph
 from action_types import ActionInfo
+from reducers import ClearList
 
 
 @dataclass
@@ -62,9 +63,6 @@ class AgentRunner:
         Returns:
             RunResult: A structured result containing the last AI message, state, and token counts
         """
-        # Clear actions at the start of each run
-        self.actions = []
-
         events = self.agent.stream(
             {
                 "messages": [("user", user_input)],
@@ -72,6 +70,7 @@ class AgentRunner:
                 "affected_files": self.affected_files,
                 "file_metadata": self.file_metadata,
                 "analysis_tokens": self.analysis_tokens,
+                "actions": ClearList(),
             },
             self.memory_config,
             stream_mode="values",
@@ -79,7 +78,6 @@ class AgentRunner:
 
         last_event = None
         event_counter = 1
-        self.actions = []
 
         for event in events:
             event_str = f"\nEvent {event_counter}:"
@@ -163,7 +161,6 @@ class AgentRunner:
                 "analysis_tokens": self.analysis_tokens,
                 "actions": self.actions,
             }
-
             return RunResult(
                 result_message=result_message,
                 state=state,

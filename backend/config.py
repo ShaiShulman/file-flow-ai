@@ -33,6 +33,8 @@ RECURSION_LIMIT = 50
 
 # Agent Configuration
 AGENT_VERBOSE = True
+# Whether to filter out affected_files and actions from prompt messages
+FILTER_PROMPT_MESSAGES = True
 
 SYSTEM_MESSAGE = """
 You are a helpful assistant that can help with tasks in a file system.

@@ -15,6 +15,7 @@ from tools import (
     process_tools_output,
 )
 from state import State
+from message_utils import filter_messages
 
 
 class Assistant:
@@ -23,12 +24,14 @@ class Assistant:
 
     def __call__(self, state: State):
         current_wd = state.get("working_directory", WORKING_DIRECTORY)
+        # Filter messages before passing to the prompt
+        filtered_state = {**state, "messages": filter_messages(state["messages"])}
         current_runnable = (
             primary_assistant_prompt.partial(working_directory=current_wd)
             | self.runnable
         )
 
-        result = current_runnable.invoke(state)
+        result = current_runnable.invoke(filtered_state)
 
         # If we get an empty response, ask for clarification
         if not result.tool_calls and (
@@ -44,7 +47,7 @@ class Assistant:
             }
             result = current_runnable.invoke(state)
 
-        return {"messages": result}
+        return {"messages": result, "actions": []}
 
 
 def get_initial_state():
