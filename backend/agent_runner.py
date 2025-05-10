@@ -33,6 +33,7 @@ class AgentRunner:
         self.affected_files = []
         self.file_metadata = {}
         self.analysis_tokens = 0
+        self.instruction_tokens = 0
         self.actions = []
         self.thread_id = str(uuid.uuid4())
         self.agent = graph
@@ -78,6 +79,7 @@ class AgentRunner:
 
         last_event = None
         event_counter = 1
+        instruction_tokens = 0
 
         for event in events:
             event_str = f"\nEvent {event_counter}:"
@@ -87,7 +89,6 @@ class AgentRunner:
                 for key, value in event.items():
                     if key == "messages":
                         event_str += "\n  Messages:"
-                        instruction_tokens = 0
                         for msg_idx, msg in enumerate(value, 1):
                             msg_type = (
                                 msg.__class__.__name__
@@ -133,6 +134,7 @@ class AgentRunner:
 
             self.affected_files = last_event["affected_files"]
             self.analysis_tokens = last_event["analysis_tokens"]
+            self.instruction_tokens = instruction_tokens
 
             # Display folder content
             self._print_debug(
@@ -140,7 +142,7 @@ class AgentRunner:
                 "\033[93m",
             )
 
-            self._print_debug(f"Instruction tokens used: {instruction_tokens}")
+            self._print_debug(f"Instruction tokens used: {self.instruction_tokens}")
             self._print_debug(f"Analysis tokens used: {self.analysis_tokens}")
 
             # Get the last AI message
@@ -159,13 +161,19 @@ class AgentRunner:
                 "affected_files": self.affected_files,
                 "file_metadata": self.file_metadata,
                 "analysis_tokens": self.analysis_tokens,
+                "instruction_tokens": self.instruction_tokens,
                 "actions": self.actions,
             }
+
+            # Include categories if present in the last event
+            if "categories" in last_event:
+                state["categories"] = last_event["categories"]
+
             return RunResult(
                 result_message=result_message,
                 state=state,
                 analysis_tokens=self.analysis_tokens,
-                instruction_tokens=instruction_tokens,
+                instruction_tokens=self.instruction_tokens,
                 actions=self.actions,
             )
 
