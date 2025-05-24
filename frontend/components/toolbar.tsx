@@ -1,16 +1,51 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Upload, Download, Settings, Search, RefreshCw, HelpCircle, FileText, FolderPlus } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import UploadDialog from "@/features/upload/components/upload-dialog"
-import { toast } from "@/components/ui/use-toast"
+import { useState } from "react";
+import {
+  Upload,
+  Download,
+  Settings,
+  Search,
+  RefreshCw,
+  HelpCircle,
+  FileText,
+  FolderPlus,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import UploadDialog from "@/features/upload/components/upload-dialog";
+import { toast } from "@/components/ui/use-toast";
+import type { FolderType } from "@/lib/types";
 
-export default function Toolbar() {
-  const [isUploadOpen, setIsUploadOpen] = useState(false)
+interface ToolbarProps {
+  onFilesExtracted: (files: FolderType, folderId: string) => void;
+  onDownload: () => Promise<void>;
+  isDownloading: boolean;
+}
+
+export default function Toolbar({
+  onFilesExtracted,
+  onDownload,
+  isDownloading,
+}: ToolbarProps) {
+  const [isUploadOpen, setIsUploadOpen] = useState(false);
+
+  const handleFilesExtracted = (
+    folderName: string,
+    files: FolderType,
+    folderId: string
+  ) => {
+    if (onFilesExtracted) {
+      onFilesExtracted(files, folderId);
+    }
+  };
 
   return (
     <Card
@@ -22,13 +57,16 @@ export default function Toolbar() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <FileText className="h-6 w-6 text-slate-700" />
-          <h1 className="text-xl font-bold text-slate-800">Legal Document Categorizer</h1>
+          <h1 className="text-xl font-bold text-slate-800">FileFlow.ai</h1>
         </div>
 
         <div className="flex items-center gap-2 mx-4 flex-1 max-w-md">
           <div className="relative w-full">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-slate-500" />
-            <Input placeholder="Search documents..." className="pl-8 bg-white border-slate-300" />
+            <Input
+              placeholder="Search documents..."
+              className="pl-8 bg-white border-slate-300"
+            />
           </div>
         </div>
 
@@ -55,26 +93,33 @@ export default function Toolbar() {
                 <Button
                   variant="outline"
                   size="icon"
-                  onClick={() => {
-                    toast({
-                      title: "Download Started",
-                      description: "Downloading current bucket...",
-                    })
-                    // In a real app, this would trigger the actual download
-                  }}
+                  onClick={onDownload}
+                  disabled={isDownloading}
                   className="bg-white border-slate-300 hover:bg-slate-100"
                 >
-                  <Download className="h-4 w-4 text-slate-700" />
+                  {isDownloading ? (
+                    <RefreshCw className="h-4 w-4 text-slate-700 animate-spin" />
+                  ) : (
+                    <Download className="h-4 w-4 text-slate-700" />
+                  )}
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Download Current Bucket</p>
+                <p>
+                  {isDownloading
+                    ? "Creating ZIP..."
+                    : "Download Current Bucket"}
+                </p>
               </TooltipContent>
             </Tooltip>
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="outline" size="icon" className="bg-white border-slate-300 hover:bg-slate-100">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="bg-white border-slate-300 hover:bg-slate-100"
+                >
                   <FolderPlus className="h-4 w-4 text-slate-700" />
                 </Button>
               </TooltipTrigger>
@@ -85,7 +130,11 @@ export default function Toolbar() {
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="outline" size="icon" className="bg-white border-slate-300 hover:bg-slate-100">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="bg-white border-slate-300 hover:bg-slate-100"
+                >
                   <RefreshCw className="h-4 w-4 text-slate-700" />
                 </Button>
               </TooltipTrigger>
@@ -96,7 +145,11 @@ export default function Toolbar() {
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="outline" size="icon" className="bg-white border-slate-300 hover:bg-slate-100">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="bg-white border-slate-300 hover:bg-slate-100"
+                >
                   <Settings className="h-4 w-4 text-slate-700" />
                 </Button>
               </TooltipTrigger>
@@ -104,22 +157,15 @@ export default function Toolbar() {
                 <p>Settings</p>
               </TooltipContent>
             </Tooltip>
-
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="outline" size="icon" className="bg-white border-slate-300 hover:bg-slate-100">
-                  <HelpCircle className="h-4 w-4 text-slate-700" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Help</p>
-              </TooltipContent>
-            </Tooltip>
           </TooltipProvider>
         </div>
       </div>
 
-      <UploadDialog open={isUploadOpen} onOpenChange={setIsUploadOpen} />
+      <UploadDialog
+        open={isUploadOpen}
+        onOpenChange={setIsUploadOpen}
+        onFilesExtracted={handleFilesExtracted}
+      />
     </Card>
-  )
+  );
 }
