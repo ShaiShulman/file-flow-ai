@@ -1,0 +1,1204 @@
+{
+  "id": "87c78a07-2a36-47d8-9087-e9fb309947cc",
+  "name": "extracted_87c78a07-2a36-47d8-9087-e9fb309947cc",
+  "type": "folder",
+  "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc",
+  "children": [
+    {
+      "id": "bd4199a4-12aa-4a6e-8f0d-070268b85553",
+      "name": ".gitignore",
+      "type": "file",
+      "extension": "gitignore",
+      "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\.gitignore",
+      "metadata": {
+        "lastModified": "2025-05-10T12:18:30.000Z",
+        "size": 313
+      }
+    },
+    {
+      "id": "993f75c7-e0d1-4c75-8481-ec19afd5ea5b",
+      "name": "app",
+      "type": "folder",
+      "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\app",
+      "children": [
+        {
+          "id": "88ac7fc2-07d8-4588-84ed-f1e3ab60580f",
+          "name": "globals.css",
+          "type": "file",
+          "extension": "css",
+          "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\app\\globals.css",
+          "metadata": {
+            "lastModified": "2025-05-10T12:18:30.000Z",
+            "size": 2428
+          }
+        },
+        {
+          "id": "78f7ce7b-a5ea-48ea-a09d-a940e2f8f7c4",
+          "name": "layout.tsx",
+          "type": "file",
+          "extension": "tsx",
+          "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\app\\layout.tsx",
+          "metadata": {
+            "lastModified": "2025-05-10T12:18:30.000Z",
+            "size": 353
+          }
+        },
+        {
+          "id": "802ddbba-ecbe-4b8e-a42e-3e51fa5f7b6f",
+          "name": "api",
+          "type": "folder",
+          "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\app\\api",
+          "children": [
+            {
+              "id": "7c6c4830-f033-4451-a1e5-fe121255b17f",
+              "name": "categorize",
+              "type": "folder",
+              "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\app\\api\\categorize",
+              "children": [
+                {
+                  "id": "604d0991-71b4-47fc-b5a7-16b0f243201e",
+                  "name": "route.ts",
+                  "type": "file",
+                  "extension": "ts",
+                  "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\app\\api\\categorize\\route.ts",
+                  "metadata": {
+                    "lastModified": "2025-05-10T12:18:30.000Z",
+                    "size": 1995
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "f25f8dd0-8175-4fb6-afee-a417a2793d12",
+          "name": "page.tsx",
+          "type": "file",
+          "extension": "tsx",
+          "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\app\\page.tsx",
+          "metadata": {
+            "lastModified": "2025-05-10T12:18:30.000Z",
+            "size": 1803
+          }
+        }
+      ]
+    },
+    {
+      "id": "bb012cbc-3e22-4f1b-be1b-efd23ed6a521",
+      "name": "components",
+      "type": "folder",
+      "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\components",
+      "children": [
+        {
+          "id": "e50c56e9-bf8a-4147-a071-521e6dc6e765",
+          "name": "theme-provider.tsx",
+          "type": "file",
+          "extension": "tsx",
+          "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\components\\theme-provider.tsx",
+          "metadata": {
+            "lastModified": "2025-05-10T12:18:30.000Z",
+            "size": 292
+          }
+        },
+        {
+          "id": "be078998-46e7-4a34-943d-27f270446f31",
+          "name": "ui",
+          "type": "folder",
+          "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\components\\ui",
+          "children": [
+            {
+              "id": "1af2da37-8fd4-47e6-986a-71301c919ae7",
+              "name": "accordion.tsx",
+              "type": "file",
+              "extension": "tsx",
+              "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\components\\ui\\accordion.tsx",
+              "metadata": {
+                "lastModified": "2025-05-10T12:18:30.000Z",
+                "size": 1991
+              }
+            },
+            {
+              "id": "00164268-a6d4-41a8-bd49-db3cc9f44615",
+              "name": "alert-dialog.tsx",
+              "type": "file",
+              "extension": "tsx",
+              "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\components\\ui\\alert-dialog.tsx",
+              "metadata": {
+                "lastModified": "2025-05-10T12:18:30.000Z",
+                "size": 4434
+              }
+            },
+            {
+              "id": "8ab887a8-54d9-41bc-ad07-d08aa07f86d1",
+              "name": "alert.tsx",
+              "type": "file",
+              "extension": "tsx",
+              "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\components\\ui\\alert.tsx",
+              "metadata": {
+                "lastModified": "2025-05-10T12:18:30.000Z",
+                "size": 1584
+              }
+            },
+            {
+              "id": "0df8ad50-886b-41c4-9193-576f295bd440",
+              "name": "aspect-ratio.tsx",
+              "type": "file",
+              "extension": "tsx",
+              "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\components\\ui\\aspect-ratio.tsx",
+              "metadata": {
+                "lastModified": "2025-05-10T12:18:30.000Z",
+                "size": 154
+              }
+            },
+            {
+              "id": "472eb09f-a6b9-48c0-8ebe-d8b7ca85424a",
+              "name": "avatar.tsx",
+              "type": "file",
+              "extension": "tsx",
+              "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\components\\ui\\avatar.tsx",
+              "metadata": {
+                "lastModified": "2025-05-10T12:18:30.000Z",
+                "size": 1419
+              }
+            },
+            {
+              "id": "ab332b4a-b5fa-4d0c-8b06-cd228e373bca",
+              "name": "badge.tsx",
+              "type": "file",
+              "extension": "tsx",
+              "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\components\\ui\\badge.tsx",
+              "metadata": {
+                "lastModified": "2025-05-10T12:18:30.000Z",
+                "size": 1128
+              }
+            },
+            {
+              "id": "37a74a6b-fb1a-44b1-899f-291f0b3f0dba",
+              "name": "breadcrumb.tsx",
+              "type": "file",
+              "extension": "tsx",
+              "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\components\\ui\\breadcrumb.tsx",
+              "metadata": {
+                "lastModified": "2025-05-10T12:18:30.000Z",
+                "size": 2712
+              }
+            },
+            {
+              "id": "834667e7-39b4-4cce-a7b2-5b47f9ee07eb",
+              "name": "button.tsx",
+              "type": "file",
+              "extension": "tsx",
+              "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\components\\ui\\button.tsx",
+              "metadata": {
+                "lastModified": "2025-05-10T12:18:30.000Z",
+                "size": 1901
+              }
+            },
+            {
+              "id": "67d721d1-3100-42b6-8408-1ba4d3f28912",
+              "name": "calendar.tsx",
+              "type": "file",
+              "extension": "tsx",
+              "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\components\\ui\\calendar.tsx",
+              "metadata": {
+                "lastModified": "2025-05-10T12:18:30.000Z",
+                "size": 2587
+              }
+            },
+            {
+              "id": "ad334166-aabd-4154-90ca-b6f22c093877",
+              "name": "card.tsx",
+              "type": "file",
+              "extension": "tsx",
+              "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\components\\ui\\card.tsx",
+              "metadata": {
+                "lastModified": "2025-05-10T12:18:30.000Z",
+                "size": 1858
+              }
+            },
+            {
+              "id": "56b5e6c3-990f-4d10-8108-39ae64bc4916",
+              "name": "carousel.tsx",
+              "type": "file",
+              "extension": "tsx",
+              "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\components\\ui\\carousel.tsx",
+              "metadata": {
+                "lastModified": "2025-05-10T12:18:30.000Z",
+                "size": 6224
+              }
+            },
+            {
+              "id": "ecc74124-d80c-4549-ac31-250022e673bc",
+              "name": "chart.tsx",
+              "type": "file",
+              "extension": "tsx",
+              "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\components\\ui\\chart.tsx",
+              "metadata": {
+                "lastModified": "2025-05-10T12:18:30.000Z",
+                "size": 10480
+              }
+            },
+            {
+              "id": "1828385d-9a26-4c14-8511-dc6b4174c27d",
+              "name": "checkbox.tsx",
+              "type": "file",
+              "extension": "tsx",
+              "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\components\\ui\\checkbox.tsx",
+              "metadata": {
+                "lastModified": "2025-05-10T12:18:30.000Z",
+                "size": 1070
+              }
+            },
+            {
+              "id": "d3a0881c-a791-4eb1-a0eb-7457070b8426",
+              "name": "collapsible.tsx",
+              "type": "file",
+              "extension": "tsx",
+              "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\components\\ui\\collapsible.tsx",
+              "metadata": {
+                "lastModified": "2025-05-10T12:18:30.000Z",
+                "size": 329
+              }
+            },
+            {
+              "id": "f25d3807-e5fd-4142-9f6a-79b81c8f2726",
+              "name": "command.tsx",
+              "type": "file",
+              "extension": "tsx",
+              "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\components\\ui\\command.tsx",
+              "metadata": {
+                "lastModified": "2025-05-10T12:18:30.000Z",
+                "size": 4899
+              }
+            },
+            {
+              "id": "e5093ac9-e0f1-443d-b8eb-663b9540d7e8",
+              "name": "context-menu.tsx",
+              "type": "file",
+              "extension": "tsx",
+              "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\components\\ui\\context-menu.tsx",
+              "metadata": {
+                "lastModified": "2025-05-10T12:18:30.000Z",
+                "size": 7260
+              }
+            },
+            {
+              "id": "98ee24f9-820a-4c3d-b090-bf9f6c65343c",
+              "name": "dialog.tsx",
+              "type": "file",
+              "extension": "tsx",
+              "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\components\\ui\\dialog.tsx",
+              "metadata": {
+                "lastModified": "2025-05-10T12:18:30.000Z",
+                "size": 3849
+              }
+            },
+            {
+              "id": "b4fb9cbe-9aff-4d47-8530-ffa414e71ded",
+              "name": "drawer.tsx",
+              "type": "file",
+              "extension": "tsx",
+              "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\components\\ui\\drawer.tsx",
+              "metadata": {
+                "lastModified": "2025-05-10T12:18:30.000Z",
+                "size": 3021
+              }
+            },
+            {
+              "id": "64bc1672-1c6d-4006-9651-da4243b97558",
+              "name": "dropdown-menu.tsx",
+              "type": "file",
+              "extension": "tsx",
+              "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\components\\ui\\dropdown-menu.tsx",
+              "metadata": {
+                "lastModified": "2025-05-10T12:18:30.000Z",
+                "size": 7433
+              }
+            },
+            {
+              "id": "d38da81b-90b8-43e6-ab7f-b06f1a25efa7",
+              "name": "form.tsx",
+              "type": "file",
+              "extension": "tsx",
+              "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\components\\ui\\form.tsx",
+              "metadata": {
+                "lastModified": "2025-05-10T12:18:30.000Z",
+                "size": 4099
+              }
+            },
+            {
+              "id": "81b79857-aa6a-470b-a0fc-7a01a297d62f",
+              "name": "hover-card.tsx",
+              "type": "file",
+              "extension": "tsx",
+              "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\components\\ui\\hover-card.tsx",
+              "metadata": {
+                "lastModified": "2025-05-10T12:18:30.000Z",
+                "size": 1198
+              }
+            },
+            {
+              "id": "2c78c5e0-b22d-4ad4-9d1a-bd3e6eda5743",
+              "name": "input-otp.tsx",
+              "type": "file",
+              "extension": "tsx",
+              "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\components\\ui\\input-otp.tsx",
+              "metadata": {
+                "lastModified": "2025-05-10T12:18:30.000Z",
+                "size": 2168
+              }
+            },
+            {
+              "id": "923d7f05-3861-4247-b15b-06109649c1cf",
+              "name": "input.tsx",
+              "type": "file",
+              "extension": "tsx",
+              "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\components\\ui\\input.tsx",
+              "metadata": {
+                "lastModified": "2025-05-10T12:18:30.000Z",
+                "size": 791
+              }
+            },
+            {
+              "id": "317d9c3b-e05f-4eb0-ba89-8be1a2b7d90b",
+              "name": "label.tsx",
+              "type": "file",
+              "extension": "tsx",
+              "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\components\\ui\\label.tsx",
+              "metadata": {
+                "lastModified": "2025-05-10T12:18:30.000Z",
+                "size": 724
+              }
+            },
+            {
+              "id": "d524bdbe-a3f2-4a75-87e5-853a2b6c5a3d",
+              "name": "menubar.tsx",
+              "type": "file",
+              "extension": "tsx",
+              "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\components\\ui\\menubar.tsx",
+              "metadata": {
+                "lastModified": "2025-05-10T12:18:30.000Z",
+                "size": 7988
+              }
+            },
+            {
+              "id": "a0d9018f-4e39-4492-95d8-1144b26e7a42",
+              "name": "navigation-menu.tsx",
+              "type": "file",
+              "extension": "tsx",
+              "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\components\\ui\\navigation-menu.tsx",
+              "metadata": {
+                "lastModified": "2025-05-10T12:18:30.000Z",
+                "size": 5046
+              }
+            },
+            {
+              "id": "5407976e-1d72-4440-9d7b-94faf4af9241",
+              "name": "pagination.tsx",
+              "type": "file",
+              "extension": "tsx",
+              "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\components\\ui\\pagination.tsx",
+              "metadata": {
+                "lastModified": "2025-05-10T12:18:30.000Z",
+                "size": 2751
+              }
+            },
+            {
+              "id": "26a64d88-51cf-4f05-a692-70b360d1cee6",
+              "name": "popover.tsx",
+              "type": "file",
+              "extension": "tsx",
+              "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\components\\ui\\popover.tsx",
+              "metadata": {
+                "lastModified": "2025-05-10T12:18:30.000Z",
+                "size": 1244
+              }
+            },
+            {
+              "id": "4565b75f-b31e-4642-b337-144cf76dfc2a",
+              "name": "progress.tsx",
+              "type": "file",
+              "extension": "tsx",
+              "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\components\\ui\\progress.tsx",
+              "metadata": {
+                "lastModified": "2025-05-10T12:18:30.000Z",
+                "size": 791
+              }
+            },
+            {
+              "id": "58b958d7-d4fb-4fa8-8516-9ed162bae2e2",
+              "name": "radio-group.tsx",
+              "type": "file",
+              "extension": "tsx",
+              "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\components\\ui\\radio-group.tsx",
+              "metadata": {
+                "lastModified": "2025-05-10T12:18:30.000Z",
+                "size": 1481
+              }
+            },
+            {
+              "id": "cea5a98e-2488-4b85-893e-90a9df74be5e",
+              "name": "resizable.tsx",
+              "type": "file",
+              "extension": "tsx",
+              "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\components\\ui\\resizable.tsx",
+              "metadata": {
+                "lastModified": "2025-05-10T12:18:30.000Z",
+                "size": 1723
+              }
+            },
+            {
+              "id": "bd83b398-dfba-4145-8167-9d5d363c6a4f",
+              "name": "scroll-area.tsx",
+              "type": "file",
+              "extension": "tsx",
+              "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\components\\ui\\scroll-area.tsx",
+              "metadata": {
+                "lastModified": "2025-05-10T12:18:30.000Z",
+                "size": 1656
+              }
+            },
+            {
+              "id": "42593d18-a73d-49de-83e4-8cdce3ea1062",
+              "name": "select.tsx",
+              "type": "file",
+              "extension": "tsx",
+              "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\components\\ui\\select.tsx",
+              "metadata": {
+                "lastModified": "2025-05-10T12:18:30.000Z",
+                "size": 5629
+              }
+            },
+            {
+              "id": "6032bc62-9c77-47f3-94ef-274548c9d4be",
+              "name": "separator.tsx",
+              "type": "file",
+              "extension": "tsx",
+              "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\components\\ui\\separator.tsx",
+              "metadata": {
+                "lastModified": "2025-05-10T12:18:30.000Z",
+                "size": 770
+              }
+            },
+            {
+              "id": "3c5e6492-6c8a-4aab-8af0-28eb92726daa",
+              "name": "sheet.tsx",
+              "type": "file",
+              "extension": "tsx",
+              "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\components\\ui\\sheet.tsx",
+              "metadata": {
+                "lastModified": "2025-05-10T12:18:30.000Z",
+                "size": 4281
+              }
+            },
+            {
+              "id": "585a10dd-f8d0-4ae4-aa0b-1d9217358ec0",
+              "name": "sidebar.tsx",
+              "type": "file",
+              "extension": "tsx",
+              "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\components\\ui\\sidebar.tsx",
+              "metadata": {
+                "lastModified": "2025-05-10T12:18:30.000Z",
+                "size": 23381
+              }
+            },
+            {
+              "id": "488953a9-9805-4712-98d7-92d9bb0131ca",
+              "name": "skeleton.tsx",
+              "type": "file",
+              "extension": "tsx",
+              "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\components\\ui\\skeleton.tsx",
+              "metadata": {
+                "lastModified": "2025-05-10T12:18:30.000Z",
+                "size": 261
+              }
+            },
+            {
+              "id": "820ae877-2561-45cf-8433-ca806c850462",
+              "name": "slider.tsx",
+              "type": "file",
+              "extension": "tsx",
+              "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\components\\ui\\slider.tsx",
+              "metadata": {
+                "lastModified": "2025-05-10T12:18:30.000Z",
+                "size": 1091
+              }
+            },
+            {
+              "id": "e5c6c7a3-44cf-4acd-adfb-c4ed5f8ac8a2",
+              "name": "sonner.tsx",
+              "type": "file",
+              "extension": "tsx",
+              "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\components\\ui\\sonner.tsx",
+              "metadata": {
+                "lastModified": "2025-05-10T12:18:30.000Z",
+                "size": 894
+              }
+            },
+            {
+              "id": "2bce0983-d397-4bc0-b613-6b378e2af2ed",
+              "name": "switch.tsx",
+              "type": "file",
+              "extension": "tsx",
+              "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\components\\ui\\switch.tsx",
+              "metadata": {
+                "lastModified": "2025-05-10T12:18:30.000Z",
+                "size": 1153
+              }
+            },
+            {
+              "id": "e5bc6107-3c64-4556-b4df-1e7a433311d8",
+              "name": "table.tsx",
+              "type": "file",
+              "extension": "tsx",
+              "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\components\\ui\\table.tsx",
+              "metadata": {
+                "lastModified": "2025-05-10T12:18:30.000Z",
+                "size": 2765
+              }
+            },
+            {
+              "id": "a17b98a1-a6cb-4bfd-8863-f00e9758beca",
+              "name": "tabs.tsx",
+              "type": "file",
+              "extension": "tsx",
+              "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\components\\ui\\tabs.tsx",
+              "metadata": {
+                "lastModified": "2025-05-10T12:18:30.000Z",
+                "size": 1897
+              }
+            },
+            {
+              "id": "175b4198-89d0-4193-a892-cebd27495954",
+              "name": "textarea.tsx",
+              "type": "file",
+              "extension": "tsx",
+              "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\components\\ui\\textarea.tsx",
+              "metadata": {
+                "lastModified": "2025-05-10T12:18:30.000Z",
+                "size": 689
+              }
+            },
+            {
+              "id": "de0ea871-63f2-4ada-ab48-12589136efca",
+              "name": "toast.tsx",
+              "type": "file",
+              "extension": "tsx",
+              "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\components\\ui\\toast.tsx",
+              "metadata": {
+                "lastModified": "2025-05-10T12:18:30.000Z",
+                "size": 4859
+              }
+            },
+            {
+              "id": "b5921207-9c2b-4138-a69d-452962ccf13c",
+              "name": "toaster.tsx",
+              "type": "file",
+              "extension": "tsx",
+              "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\components\\ui\\toaster.tsx",
+              "metadata": {
+                "lastModified": "2025-05-10T12:18:30.000Z",
+                "size": 786
+              }
+            },
+            {
+              "id": "5406b5de-4872-4f67-b592-a820d4f49253",
+              "name": "toggle-group.tsx",
+              "type": "file",
+              "extension": "tsx",
+              "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\components\\ui\\toggle-group.tsx",
+              "metadata": {
+                "lastModified": "2025-05-10T12:18:30.000Z",
+                "size": 1753
+              }
+            },
+            {
+              "id": "3aa4ded6-9eeb-43e4-b837-84625e946745",
+              "name": "toggle.tsx",
+              "type": "file",
+              "extension": "tsx",
+              "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\components\\ui\\toggle.tsx",
+              "metadata": {
+                "lastModified": "2025-05-10T12:18:30.000Z",
+                "size": 1541
+              }
+            },
+            {
+              "id": "3f51ffc2-d486-4da6-a820-a33c04b09bf4",
+              "name": "tooltip.tsx",
+              "type": "file",
+              "extension": "tsx",
+              "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\components\\ui\\tooltip.tsx",
+              "metadata": {
+                "lastModified": "2025-05-10T12:18:30.000Z",
+                "size": 1159
+              }
+            },
+            {
+              "id": "51dda6d6-7ce1-40b2-b8f9-1ec3a942f09f",
+              "name": "use-mobile.tsx",
+              "type": "file",
+              "extension": "tsx",
+              "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\components\\ui\\use-mobile.tsx",
+              "metadata": {
+                "lastModified": "2025-05-10T12:18:30.000Z",
+                "size": 565
+              }
+            },
+            {
+              "id": "60edfbee-b3f8-4985-a8fa-48f5ae3f3eff",
+              "name": "use-toast.ts",
+              "type": "file",
+              "extension": "ts",
+              "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\components\\ui\\use-toast.ts",
+              "metadata": {
+                "lastModified": "2025-05-10T12:18:30.000Z",
+                "size": 3948
+              }
+            }
+          ]
+        },
+        {
+          "id": "bec17082-56d3-45d3-ac29-07d8bc5fda18",
+          "name": "metadata-editor.tsx",
+          "type": "file",
+          "extension": "tsx",
+          "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\components\\metadata-editor.tsx",
+          "metadata": {
+            "lastModified": "2025-05-10T12:18:30.000Z",
+            "size": 12109
+          }
+        },
+        {
+          "id": "8ac4b9a1-4e2b-4f33-8fec-b1d00fdccb6e",
+          "name": "upload-dialog.tsx",
+          "type": "file",
+          "extension": "tsx",
+          "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\components\\upload-dialog.tsx",
+          "metadata": {
+            "lastModified": "2025-05-10T12:18:30.000Z",
+            "size": 5276
+          }
+        },
+        {
+          "id": "a92820e7-49ad-49d9-9696-268ef204bc53",
+          "name": "chat-interface.tsx",
+          "type": "file",
+          "extension": "tsx",
+          "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\components\\chat-interface.tsx",
+          "metadata": {
+            "lastModified": "2025-05-10T12:18:30.000Z",
+            "size": 5585
+          }
+        },
+        {
+          "id": "a230915a-8938-46cd-a5cb-f51fc53ebb5c",
+          "name": "file-explorer.tsx",
+          "type": "file",
+          "extension": "tsx",
+          "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\components\\file-explorer.tsx",
+          "metadata": {
+            "lastModified": "2025-05-10T12:18:30.000Z",
+            "size": 8426
+          }
+        },
+        {
+          "id": "60acbfc9-f3a6-4381-9e0a-764d309e91bf",
+          "name": "bottom-panel.tsx",
+          "type": "file",
+          "extension": "tsx",
+          "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\components\\bottom-panel.tsx",
+          "metadata": {
+            "lastModified": "2025-05-10T12:18:30.000Z",
+            "size": 2317
+          }
+        },
+        {
+          "id": "259cd970-dcc3-4d5c-be28-12a20b5fbebd",
+          "name": "toolbar.tsx",
+          "type": "file",
+          "extension": "tsx",
+          "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\components\\toolbar.tsx",
+          "metadata": {
+            "lastModified": "2025-05-10T12:18:30.000Z",
+            "size": 4652
+          }
+        }
+      ]
+    },
+    {
+      "id": "08e404d6-110e-44a8-a221-800bc33f3840",
+      "name": "components.json",
+      "type": "file",
+      "extension": "json",
+      "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\components.json",
+      "metadata": {
+        "lastModified": "2025-05-10T12:18:30.000Z",
+        "size": 443
+      }
+    },
+    {
+      "id": "54377814-ad2b-4e8a-8723-2dec1b604a1e",
+      "name": "hooks",
+      "type": "folder",
+      "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\hooks",
+      "children": [
+        {
+          "id": "9ac8692e-6ef9-4eef-8d2d-9fc5ad54d713",
+          "name": "use-mobile.tsx",
+          "type": "file",
+          "extension": "tsx",
+          "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\hooks\\use-mobile.tsx",
+          "metadata": {
+            "lastModified": "2025-05-10T12:18:30.000Z",
+            "size": 565
+          }
+        },
+        {
+          "id": "d27d16ab-8305-4e94-af2d-7f942d7b714f",
+          "name": "use-toast.ts",
+          "type": "file",
+          "extension": "ts",
+          "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\hooks\\use-toast.ts",
+          "metadata": {
+            "lastModified": "2025-05-10T12:18:30.000Z",
+            "size": 3948
+          }
+        }
+      ]
+    },
+    {
+      "id": "b5250db4-7c3b-42d2-93b5-340eecd0b0a4",
+      "name": "lib",
+      "type": "folder",
+      "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\lib",
+      "children": [
+        {
+          "id": "3a565449-9ddf-40fa-a508-f1de6be2b0a0",
+          "name": "utils.ts",
+          "type": "file",
+          "extension": "ts",
+          "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\lib\\utils.ts",
+          "metadata": {
+            "lastModified": "2025-05-10T12:18:30.000Z",
+            "size": 1182
+          }
+        },
+        {
+          "id": "df5f3211-3b54-49aa-b3c3-6b4f7bdcbc83",
+          "name": "types.ts",
+          "type": "file",
+          "extension": "ts",
+          "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\lib\\types.ts",
+          "metadata": {
+            "lastModified": "2025-05-10T12:18:30.000Z",
+            "size": 810
+          }
+        }
+      ]
+    },
+    {
+      "id": "827e90b8-db81-4beb-887a-eb9d63b239df",
+      "name": "next.config.mjs",
+      "type": "file",
+      "extension": "mjs",
+      "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\next.config.mjs",
+      "metadata": {
+        "lastModified": "2025-05-10T12:18:30.000Z",
+        "size": 228
+      }
+    },
+    {
+      "id": "b585f77d-aafc-40ae-a7c3-83a291960f98",
+      "name": "package.json",
+      "type": "file",
+      "extension": "json",
+      "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\package.json",
+      "metadata": {
+        "lastModified": "2025-05-10T12:18:30.000Z",
+        "size": 2212
+      }
+    },
+    {
+      "id": "0d40f782-e9f2-4400-82fc-952176406ad6",
+      "name": "pnpm-lock.yaml",
+      "type": "file",
+      "extension": "yaml",
+      "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\pnpm-lock.yaml",
+      "metadata": {
+        "lastModified": "2025-05-10T12:18:30.000Z",
+        "size": 92
+      }
+    },
+    {
+      "id": "99ff1785-f3d2-4141-8a16-742e9cac30ed",
+      "name": "postcss.config.mjs",
+      "type": "file",
+      "extension": "mjs",
+      "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\postcss.config.mjs",
+      "metadata": {
+        "lastModified": "2025-05-10T12:18:30.000Z",
+        "size": 135
+      }
+    },
+    {
+      "id": "48530a34-800a-4488-a524-64b917d25765",
+      "name": "public",
+      "type": "folder",
+      "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\public",
+      "children": [
+        {
+          "id": "79884ffc-8213-4d63-afff-ff63500458a6",
+          "name": "placeholder-logo.png",
+          "type": "file",
+          "extension": "png",
+          "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\public\\placeholder-logo.png",
+          "metadata": {
+            "lastModified": "2025-05-10T12:18:30.000Z",
+            "size": 958
+          }
+        },
+        {
+          "id": "42eaced0-c19f-4d1b-bab9-5b679ad0498c",
+          "name": "placeholder-logo.svg",
+          "type": "file",
+          "extension": "svg",
+          "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\public\\placeholder-logo.svg",
+          "metadata": {
+            "lastModified": "2025-05-10T12:18:30.000Z",
+            "size": 3208
+          }
+        },
+        {
+          "id": "bd4ac8a7-7a55-40e4-9943-464d782d53b6",
+          "name": "placeholder-user.jpg",
+          "type": "file",
+          "extension": "jpg",
+          "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\public\\placeholder-user.jpg",
+          "metadata": {
+            "lastModified": "2025-05-10T12:18:30.000Z",
+            "size": 2615
+          }
+        },
+        {
+          "id": "c7c3cdee-1cd4-467b-922b-27099bab5149",
+          "name": "placeholder.jpg",
+          "type": "file",
+          "extension": "jpg",
+          "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\public\\placeholder.jpg",
+          "metadata": {
+            "lastModified": "2025-05-10T12:18:30.000Z",
+            "size": 1596
+          }
+        },
+        {
+          "id": "2640cc5c-dc2f-4c00-a860-3d7f02071a5a",
+          "name": "placeholder.svg",
+          "type": "file",
+          "extension": "svg",
+          "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\public\\placeholder.svg",
+          "metadata": {
+            "lastModified": "2025-05-10T12:18:30.000Z",
+            "size": 3253
+          }
+        },
+        {
+          "id": "d662f8c6-9e9f-4215-bd3c-71126746dc40",
+          "name": "images",
+          "type": "folder",
+          "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\public\\images",
+          "children": [
+            {
+              "id": "c698f350-4c31-4567-ae20-3bbf8e86049d",
+              "name": "categories.png",
+              "type": "file",
+              "extension": "png",
+              "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\public\\images\\categories.png",
+              "metadata": {
+                "lastModified": "2025-05-10T12:18:30.000Z",
+                "size": 42529
+              }
+            },
+            {
+              "id": "6dc204e6-14f3-458a-91a3-d8166564bc7d",
+              "name": "prompt.png",
+              "type": "file",
+              "extension": "png",
+              "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\public\\images\\prompt.png",
+              "metadata": {
+                "lastModified": "2025-05-10T12:18:30.000Z",
+                "size": 64886
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "409cda85-a612-40c1-86c8-f362a4a08dd1",
+      "name": "styles",
+      "type": "folder",
+      "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\styles",
+      "children": [
+        {
+          "id": "92a8a7f0-dc7e-426b-a9cb-dd517e430ea0",
+          "name": "globals.css",
+          "type": "file",
+          "extension": "css",
+          "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\styles\\globals.css",
+          "metadata": {
+            "lastModified": "2025-05-10T12:18:30.000Z",
+            "size": 2428
+          }
+        }
+      ]
+    },
+    {
+      "id": "83ed912b-1954-43df-974c-907683da2674",
+      "name": "tailwind.config.ts",
+      "type": "file",
+      "extension": "ts",
+      "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\tailwind.config.ts",
+      "metadata": {
+        "lastModified": "2025-05-10T12:18:30.000Z",
+        "size": 2570
+      }
+    },
+    {
+      "id": "88fd16a3-563a-48c4-bc3e-26fcb914fa34",
+      "name": "tsconfig.json",
+      "type": "file",
+      "extension": "json",
+      "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\tsconfig.json",
+      "metadata": {
+        "lastModified": "2025-05-10T12:18:30.000Z",
+        "size": 595
+      }
+    },
+    {
+      "id": "74030d5e-e0dd-4f0c-9393-35576bfdebec",
+      "name": "features",
+      "type": "folder",
+      "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\features",
+      "children": [
+        {
+          "id": "d95124fb-5c86-4942-acd8-b81164ddb993",
+          "name": "file-explorer",
+          "type": "folder",
+          "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\features\\file-explorer",
+          "children": [
+            {
+              "id": "27731dc3-597f-4998-a7ba-573c0f678061",
+              "name": "data.ts",
+              "type": "file",
+              "extension": "ts",
+              "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\features\\file-explorer\\data.ts",
+              "metadata": {
+                "lastModified": "2025-05-10T12:18:30.000Z",
+                "size": 3148
+              }
+            },
+            {
+              "id": "6e812e02-4e86-458c-9b9b-4edfc59b63cd",
+              "name": "components",
+              "type": "folder",
+              "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\features\\file-explorer\\components",
+              "children": [
+                {
+                  "id": "596f5127-0973-4337-b4f7-c06960fb230a",
+                  "name": "file-item.tsx",
+                  "type": "file",
+                  "extension": "tsx",
+                  "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\features\\file-explorer\\components\\file-item.tsx",
+                  "metadata": {
+                    "lastModified": "2025-05-10T12:18:30.000Z",
+                    "size": 1905
+                  }
+                },
+                {
+                  "id": "8bf71b99-72a9-47b7-ab44-3057541e809f",
+                  "name": "folder-item.tsx",
+                  "type": "file",
+                  "extension": "tsx",
+                  "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\features\\file-explorer\\components\\folder-item.tsx",
+                  "metadata": {
+                    "lastModified": "2025-05-10T12:18:30.000Z",
+                    "size": 2854
+                  }
+                },
+                {
+                  "id": "d5ca5cc6-a6fd-4de7-86eb-b565e3ab9645",
+                  "name": "file-explorer.tsx",
+                  "type": "file",
+                  "extension": "tsx",
+                  "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\features\\file-explorer\\components\\file-explorer.tsx",
+                  "metadata": {
+                    "lastModified": "2025-05-10T12:18:30.000Z",
+                    "size": 1545
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "bdfbd4d7-8ac0-4073-937a-dbb0d99ae8f4",
+          "name": "chat",
+          "type": "folder",
+          "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\features\\chat",
+          "children": [
+            {
+              "id": "cbc62b4d-655c-41e6-b019-b49dd7e38f72",
+              "name": "components",
+              "type": "folder",
+              "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\features\\chat\\components",
+              "children": [
+                {
+                  "id": "7aed567f-6e46-47da-9491-e3cab6f4db0d",
+                  "name": "chat-interface.tsx",
+                  "type": "file",
+                  "extension": "tsx",
+                  "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\features\\chat\\components\\chat-interface.tsx",
+                  "metadata": {
+                    "lastModified": "2025-05-10T12:18:30.000Z",
+                    "size": 5511
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "c2fc0c25-06db-48a2-a868-c1e585c833c4",
+          "name": "metadata",
+          "type": "folder",
+          "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\features\\metadata",
+          "children": [
+            {
+              "id": "34729e78-43ce-4f2e-9873-b33fe365be22",
+              "name": "data.ts",
+              "type": "file",
+              "extension": "ts",
+              "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\features\\metadata\\data.ts",
+              "metadata": {
+                "lastModified": "2025-05-10T12:18:30.000Z",
+                "size": 941
+              }
+            },
+            {
+              "id": "6e3b4b50-a9c4-425f-84a8-b39448b2baf8",
+              "name": "components",
+              "type": "folder",
+              "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\features\\metadata\\components",
+              "children": [
+                {
+                  "id": "dca68de8-dd38-4ae0-8e28-3df5deaa7367",
+                  "name": "metadata-editor.tsx",
+                  "type": "file",
+                  "extension": "tsx",
+                  "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\features\\metadata\\components\\metadata-editor.tsx",
+                  "metadata": {
+                    "lastModified": "2025-05-10T12:18:30.000Z",
+                    "size": 5798
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ba475ebd-3587-4ede-a344-eb9fc72814cf",
+          "name": "categories",
+          "type": "folder",
+          "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\features\\categories",
+          "children": [
+            {
+              "id": "c2b44d35-1319-4c71-86f4-bce20da5fd16",
+              "name": "components",
+              "type": "folder",
+              "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\features\\categories\\components",
+              "children": [
+                {
+                  "id": "d8c31783-5031-4252-b48f-00a67e78dc53",
+                  "name": "category-editor.tsx",
+                  "type": "file",
+                  "extension": "tsx",
+                  "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\features\\categories\\components\\category-editor.tsx",
+                  "metadata": {
+                    "lastModified": "2025-05-10T12:18:30.000Z",
+                    "size": 6782
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ec56a53b-d813-49eb-8693-84f095794763",
+          "name": "changes",
+          "type": "folder",
+          "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\features\\changes",
+          "children": [
+            {
+              "id": "00008d98-e3af-4ae3-8b4f-204c760e2dd7",
+              "name": "data.ts",
+              "type": "file",
+              "extension": "ts",
+              "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\features\\changes\\data.ts",
+              "metadata": {
+                "lastModified": "2025-05-10T12:18:30.000Z",
+                "size": 1091
+              }
+            },
+            {
+              "id": "0cc1e839-5d5a-4a30-9163-8f91d0a71fb8",
+              "name": "components",
+              "type": "folder",
+              "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\features\\changes\\components",
+              "children": [
+                {
+                  "id": "74ce5260-bc2b-4381-801a-75c76235fb25",
+                  "name": "changes-list.tsx",
+                  "type": "file",
+                  "extension": "tsx",
+                  "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\features\\changes\\components\\changes-list.tsx",
+                  "metadata": {
+                    "lastModified": "2025-05-10T12:18:30.000Z",
+                    "size": 1866
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "01861195-70e4-4c3c-8b61-f1d7f4bd7cc6",
+          "name": "upload",
+          "type": "folder",
+          "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\features\\upload",
+          "children": [
+            {
+              "id": "af79528f-532a-4b22-80f0-054432b3f89f",
+              "name": "components",
+              "type": "folder",
+              "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\features\\upload\\components",
+              "children": [
+                {
+                  "id": "7d8e0644-8d1d-4adc-a210-f21dca2b7606",
+                  "name": "upload-dialog.tsx",
+                  "type": "file",
+                  "extension": "tsx",
+                  "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_87c78a07-2a36-47d8-9087-e9fb309947cc\\features\\upload\\components\\upload-dialog.tsx",
+                  "metadata": {
+                    "lastModified": "2025-05-10T12:18:30.000Z",
+                    "size": 5276
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

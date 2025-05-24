@@ -1,30 +1,43 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { X, Plus, Save, Edit } from "lucide-react"
-import { useToast } from "@/components/ui/use-toast"
+import { useState, useEffect } from "react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { X, Plus, Save, Edit } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
 
 // Types
 type FileMetadata = {
-  category?: string
-  description?: string
-  options?: string[]
-}
+  category?: string;
+  description?: string;
+  options?: string[];
+};
 
 type Category = {
-  id: string
-  name: string
-  description: string
-  options: string[]
-}
+  id: string;
+  name: string;
+  description: string;
+  options: string[];
+};
 
 // Mock data
 const initialCategories: Category[] = [
@@ -58,76 +71,92 @@ const initialCategories: Category[] = [
     description: "Company policies and procedures",
     options: ["Public", "Internal", "Draft", "Approved"],
   },
-]
+];
 
 export default function MetadataEditor() {
-  const [activeTab, setActiveTab] = useState("file")
-  const [selectedFile, setSelectedFile] = useState<any | null>(null)
-  const [fileMetadata, setFileMetadata] = useState<FileMetadata>({})
-  const [categories, setCategories] = useState<Category[]>(initialCategories)
-  const [newOption, setNewOption] = useState("")
-  const [editingCategory, setEditingCategory] = useState<Category | null>(null)
-  const { toast } = useToast()
+  const [activeTab, setActiveTab] = useState("file");
+  const [selectedFile, setSelectedFile] = useState<any | null>(null);
+  const [fileMetadata, setFileMetadata] = useState<FileMetadata>({});
+  const [categories, setCategories] = useState<Category[]>(initialCategories);
+  const [newOption, setNewOption] = useState("");
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const { toast } = useToast();
 
   // Listen for file selection events
   useEffect(() => {
     const handleFileSelected = (event: CustomEvent) => {
-      setSelectedFile(event.detail)
-      setFileMetadata(event.detail.metadata || {})
-      setActiveTab("file")
-    }
+      setSelectedFile(event.detail);
+      setFileMetadata(event.detail.metadata || {});
+      setActiveTab("file");
+    };
 
-    window.addEventListener("fileSelected", handleFileSelected as EventListener)
+    window.addEventListener(
+      "fileSelected",
+      handleFileSelected as EventListener
+    );
 
     return () => {
-      window.removeEventListener("fileSelected", handleFileSelected as EventListener)
-    }
-  }, [])
+      window.removeEventListener(
+        "fileSelected",
+        handleFileSelected as EventListener
+      );
+    };
+  }, []);
 
   const handleSaveFileMetadata = () => {
-    if (!selectedFile) return
+    if (!selectedFile) return;
 
     // In a real app, you would update the file metadata in your state or backend
     toast({
       title: "Metadata saved",
       description: `Updated metadata for ${selectedFile.name}`,
-    })
-  }
+    });
+  };
 
   const handleAddOption = (categoryId: string) => {
-    if (!newOption.trim()) return
+    if (!newOption.trim()) return;
 
     setCategories(
-      categories.map((cat) => (cat.id === categoryId ? { ...cat, options: [...cat.options, newOption] } : cat)),
-    )
+      categories.map((cat) =>
+        cat.id === categoryId
+          ? { ...cat, options: [...cat.options, newOption] }
+          : cat
+      )
+    );
 
-    setNewOption("")
-  }
+    setNewOption("");
+  };
 
   const handleRemoveOption = (categoryId: string, option: string) => {
     setCategories(
       categories.map((cat) =>
-        cat.id === categoryId ? { ...cat, options: cat.options.filter((opt) => opt !== option) } : cat,
-      ),
-    )
-  }
+        cat.id === categoryId
+          ? { ...cat, options: cat.options.filter((opt) => opt !== option) }
+          : cat
+      )
+    );
+  };
 
   const handleEditCategory = (category: Category) => {
-    setEditingCategory({ ...category })
-  }
+    setEditingCategory({ ...category });
+  };
 
   const handleSaveCategory = () => {
-    if (!editingCategory) return
+    if (!editingCategory) return;
 
-    setCategories(categories.map((cat) => (cat.id === editingCategory.id ? editingCategory : cat)))
+    setCategories(
+      categories.map((cat) =>
+        cat.id === editingCategory.id ? editingCategory : cat
+      )
+    );
 
-    setEditingCategory(null)
+    setEditingCategory(null);
 
     toast({
       title: "Category updated",
       description: `Updated category: ${editingCategory.name}`,
-    })
-  }
+    });
+  };
 
   const handleAddCategory = () => {
     const newCategory: Category = {
@@ -135,11 +164,11 @@ export default function MetadataEditor() {
       name: "New Category",
       description: "Description for the new category",
       options: [],
-    }
+    };
 
-    setCategories([...categories, newCategory])
-    setEditingCategory(newCategory)
-  }
+    setCategories([...categories, newCategory]);
+    setEditingCategory(newCategory);
+  };
 
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -162,7 +191,9 @@ export default function MetadataEditor() {
                 <Label htmlFor="category">Category</Label>
                 <Select
                   value={fileMetadata.category || ""}
-                  onValueChange={(value) => setFileMetadata({ ...fileMetadata, category: value })}
+                  onValueChange={(value) =>
+                    setFileMetadata({ ...fileMetadata, category: value })
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select a category" />
@@ -182,7 +213,12 @@ export default function MetadataEditor() {
                 <Textarea
                   id="description"
                   value={fileMetadata.description || ""}
-                  onChange={(e) => setFileMetadata({ ...fileMetadata, description: e.target.value })}
+                  onChange={(e) =>
+                    setFileMetadata({
+                      ...fileMetadata,
+                      description: e.target.value,
+                    })
+                  }
                   placeholder="Enter a description for this file"
                 />
               </div>
@@ -196,14 +232,21 @@ export default function MetadataEditor() {
                       ?.options.map((option) => (
                         <Badge
                           key={option}
-                          variant={fileMetadata.options?.includes(option) ? "default" : "outline"}
+                          variant={
+                            fileMetadata.options?.includes(option)
+                              ? "default"
+                              : "outline"
+                          }
                           className="cursor-pointer"
                           onClick={() => {
-                            const currentOptions = fileMetadata.options || []
+                            const currentOptions = fileMetadata.options || [];
                             const newOptions = currentOptions.includes(option)
                               ? currentOptions.filter((o) => o !== option)
-                              : [...currentOptions, option]
-                            setFileMetadata({ ...fileMetadata, options: newOptions })
+                              : [...currentOptions, option];
+                            setFileMetadata({
+                              ...fileMetadata,
+                              options: newOptions,
+                            });
                           }}
                         >
                           {option}
@@ -241,14 +284,23 @@ export default function MetadataEditor() {
                 {editingCategory?.id === category.id ? (
                   <Input
                     value={editingCategory.name}
-                    onChange={(e) => setEditingCategory({ ...editingCategory, name: e.target.value })}
+                    onChange={(e) =>
+                      setEditingCategory({
+                        ...editingCategory,
+                        name: e.target.value,
+                      })
+                    }
                     className="font-semibold text-lg"
                     autoFocus
                   />
                 ) : (
                   <CardTitle className="flex justify-between items-center">
                     {category.name}
-                    <Button variant="ghost" size="sm" onClick={() => handleEditCategory(category)}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleEditCategory(category)}
+                    >
                       <Edit className="h-4 w-4" />
                     </Button>
                   </CardTitle>
@@ -257,7 +309,12 @@ export default function MetadataEditor() {
                 {editingCategory?.id === category.id ? (
                   <Textarea
                     value={editingCategory.description}
-                    onChange={(e) => setEditingCategory({ ...editingCategory, description: e.target.value })}
+                    onChange={(e) =>
+                      setEditingCategory({
+                        ...editingCategory,
+                        description: e.target.value,
+                      })
+                    }
                     className="text-sm text-muted-foreground mt-2"
                     rows={2}
                   />
@@ -267,17 +324,26 @@ export default function MetadataEditor() {
               </CardHeader>
               <CardContent>
                 <div className="flex flex-wrap gap-2 mb-2">
-                  {(editingCategory?.id === category.id ? editingCategory.options : category.options).map((option) => (
+                  {(editingCategory?.id === category.id
+                    ? editingCategory.options
+                    : category.options
+                  ).map((option) => (
                     <Badge
                       key={option}
                       className="flex items-center gap-1"
-                      variant={editingCategory?.id === category.id ? "default" : "outline"}
+                      variant={
+                        editingCategory?.id === category.id
+                          ? "default"
+                          : "outline"
+                      }
                     >
                       {editingCategory?.id === category.id ? (
                         <>
                           {option}
                           <button
-                            onClick={() => handleRemoveOption(category.id, option)}
+                            onClick={() =>
+                              handleRemoveOption(category.id, option)
+                            }
                             className="text-xs hover:text-foreground ml-1"
                           >
                             <X className="h-3 w-3" />
@@ -298,11 +364,14 @@ export default function MetadataEditor() {
                       onChange={(e) => setNewOption(e.target.value)}
                       onKeyDown={(e) => {
                         if (e.key === "Enter") {
-                          handleAddOption(category.id)
+                          handleAddOption(category.id);
                         }
                       }}
                     />
-                    <Button onClick={() => handleAddOption(category.id)} size="sm">
+                    <Button
+                      onClick={() => handleAddOption(category.id)}
+                      size="sm"
+                    >
                       <Plus className="h-4 w-4" />
                     </Button>
                   </div>
@@ -311,7 +380,11 @@ export default function MetadataEditor() {
               <CardFooter>
                 {editingCategory?.id === category.id ? (
                   <div className="flex gap-2 w-full justify-end">
-                    <Button variant="outline" onClick={() => setEditingCategory(null)} size="sm">
+                    <Button
+                      variant="outline"
+                      onClick={() => setEditingCategory(null)}
+                      size="sm"
+                    >
                       <X className="h-4 w-4 mr-1" />
                       Cancel
                     </Button>
@@ -321,7 +394,11 @@ export default function MetadataEditor() {
                     </Button>
                   </div>
                 ) : (
-                  <Button variant="outline" onClick={() => handleEditCategory(category)} size="sm">
+                  <Button
+                    variant="outline"
+                    onClick={() => handleEditCategory(category)}
+                    size="sm"
+                  >
                     <Edit className="h-4 w-4 mr-1" />
                     Edit
                   </Button>
@@ -332,5 +409,5 @@ export default function MetadataEditor() {
         </div>
       </TabsContent>
     </Tabs>
-  )
+  );
 }
