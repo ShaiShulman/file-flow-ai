@@ -1,0 +1,58 @@
+{
+  "categories": [
+    {
+      "id": "cat-1",
+      "name": "Incorporation documents",
+      "options": [
+        "certificate of incorporation",
+        "articles of incorporation",
+        "deeds of incorporation",
+        "bylaws"
+      ]
+    },
+    {
+      "id": "cat-2",
+      "name": "Board documents",
+      "options": [
+        "minutes of the board of directors",
+        "minutes of the directors",
+        "minutes of the board",
+        "board resolution",
+        "written resolution of the board",
+        "resolutions or written consent of the directors",
+        "resolutions or written consent of the board of directors"
+      ]
+    },
+    {
+      "id": "cat-3",
+      "name": "Authorization and signatory powers",
+      "options": [
+        "Power of attorney",
+        "POA",
+        "proxy",
+        "authorization letter"
+      ]
+    },
+    {
+      "id": "cat-4",
+      "name": "Shareholder documents",
+      "options": [
+        "minutes of the shareholders",
+        "resolutions shareholders",
+        "shareholder's resolution",
+        "shareholder's meeting",
+        "general meeting"
+      ]
+    },
+    {
+      "id": "cat-5",
+      "name": "Articles",
+      "options": [
+        "articles of incorporation",
+        "articles of association",
+        "deed of incorporation",
+        "deed of foundation"
+      ]
+    }
+  ]
+}

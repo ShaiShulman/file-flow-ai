@@ -1,56 +1,35 @@
 {
-  "categories": [
-    {
-      "id": "cat-1",
-      "name": "Document Type",
-      "options": [
-        "Contract",
-        "Agreement",
-        "Deed",
-        "Certificate",
-        "Policy",
-        "Report",
-        "Statement",
-        "Notice"
-      ]
-    },
-    {
-      "id": "cat-2",
-      "name": "Status",
-      "options": [
-        "Draft",
-        "Review",
-        "Approved",
-        "Rejected",
-        "Archived",
-        "Expired",
-        "Active",
-        "Pending"
-      ]
-    },
-    {
-      "id": "cat-3",
-      "name": "Department",
-      "options": [
-        "Legal",
-        "Finance",
-        "HR",
-        "IT",
-        "Operations",
-        "Sales",
-        "Marketing",
-        "Executive"
-      ]
-    },
-    {
-      "id": "cat-4",
-      "name": "Priority",
-      "options": ["High", "Medium", "Low", "Urgent", "Routine"]
-    },
-    {
-      "id": "cat-5",
-      "name": "Confidentiality",
-      "options": ["Public", "Internal", "Confidential", "Restricted", "Secret"]
-    }
+  "Incorporation documents": [
+    "certificate of incorporation",
+    "articles of incorporation",
+    "deeds of incorporation"
+  ],
+  "Board documents": [
+    "minutes of the board of directors",
+    "minutes of the directors",
+    "minutes of the board",
+    "board resolution",
+    "written resolution of the board",
+    "resolutions or written consent of the directors",
+    "resolutions or written consent of the board of directors"
+  ],
+  "Authorization and signatory powers": [
+    "Power of attorney",
+    "POA",
+    "proxy",
+    "authorization letter"
+  ],
+  "Shareholder documents": [
+    "minutes of the shareholders",
+    "resolutions shareholders",
+    "shareholder's resolution",
+    "shareholder's meeting",
+    "general meeting"
+  ],
+  "Articles": [
+    "articles of incorporation",
+    "articles of association",
+    "deed of incorporation",
+    "deed of foundation"
   ]
 }

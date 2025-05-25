@@ -7,8 +7,8 @@ import path from "path";
 import JSZip from "jszip";
 import type { FolderType, FileType } from "@/lib/types";
 
-// Use an absolute path in the project directory
-const UPLOAD_BASE_PATH = path.join(process.cwd(), "uploads");
+const UPLOAD_BASE_PATH =
+  process.env.UPLOADS_FOLDER || path.join(process.cwd(), "uploads");
 
 // Ensure the base upload directory exists
 async function ensureUploadDir() {

@@ -5,8 +5,9 @@ import fs from "fs/promises";
 import path from "path";
 import { v4 as uuidv4 } from "uuid";
 import type { Category } from "@/lib/types";
-
-const CATEGORIES_FILE = path.join(process.cwd(), "data", "categories.json");
+const CATEGORIES_FILE = process.env.CATEGORIES_FILE
+  ? path.join(process.cwd(), process.env.CATEGORIES_FILE)
+  : path.join(process.cwd(), "data", "categories.json");
 
 // Ensure the data directory exists
 async function ensureDataDir() {
