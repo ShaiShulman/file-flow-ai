@@ -3,10 +3,7 @@
     {
       "id": "cat-1",
       "name": "Incorporation documents",
-      "options": [
-        "certificate of incorporation",
-        "articles of incorporation"
-      ]
+      "options": ["certificate of incorporation", "articles of incorporation"]
     },
     {
       "id": "cat-2",
@@ -24,12 +21,7 @@
     {
       "id": "cat-3",
       "name": "Authorization and signatory powers",
-      "options": [
-        "Power of attorney",
-        "POA",
-        "proxy",
-        "authorization letter"
-      ]
+      "options": ["Power of attorney", "POA", "proxy", "authorization letter"]
     },
     {
       "id": "cat-4",

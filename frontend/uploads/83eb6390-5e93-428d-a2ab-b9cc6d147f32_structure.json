@@ -1,0 +1,145 @@
+{
+  "id": "83eb6390-5e93-428d-a2ab-b9cc6d147f32",
+  "name": "extracted_83eb6390-5e93-428d-a2ab-b9cc6d147f32",
+  "type": "folder",
+  "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_83eb6390-5e93-428d-a2ab-b9cc6d147f32",
+  "children": [
+    {
+      "id": "d31c90e8-d795-406a-a9fa-f2c0d42b7494",
+      "name": "ACCA_Social_BYA May 2024 - JW signed.pdf",
+      "type": "file",
+      "extension": "pdf",
+      "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_83eb6390-5e93-428d-a2ab-b9cc6d147f32\\ACCA_Social_BYA May 2024 - JW signed.pdf",
+      "metadata": {
+        "lastModified": "2024-10-31T14:57:00.000Z",
+        "size": 136870
+      }
+    },
+    {
+      "id": "21ee97ef-05df-480c-a599-0c94a06f08fc",
+      "name": "ACCA Programmatic May 2024 - JW signed (2).pdf",
+      "type": "file",
+      "extension": "pdf",
+      "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_83eb6390-5e93-428d-a2ab-b9cc6d147f32\\ACCA Programmatic May 2024 - JW signed (2).pdf",
+      "metadata": {
+        "lastModified": "2024-10-31T14:57:00.000Z",
+        "size": 137788
+      }
+    },
+    {
+      "id": "4ab1aa98-5c61-4722-b0c1-6df307bf4071",
+      "name": "ACCA_Programmatic BAU_April 2024 - JW signed.pdf",
+      "type": "file",
+      "extension": "pdf",
+      "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_83eb6390-5e93-428d-a2ab-b9cc6d147f32\\ACCA_Programmatic BAU_April 2024 - JW signed.pdf",
+      "metadata": {
+        "lastModified": "2024-10-31T14:57:00.000Z",
+        "size": 137695
+      }
+    },
+    {
+      "id": "c05af6dc-69b2-4ae4-82ba-46d4b424010a",
+      "name": "ACCA_Social BAU_April 2024 - JW Signed.pdf",
+      "type": "file",
+      "extension": "pdf",
+      "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_83eb6390-5e93-428d-a2ab-b9cc6d147f32\\ACCA_Social BAU_April 2024 - JW Signed.pdf",
+      "metadata": {
+        "lastModified": "2024-10-31T14:57:00.000Z",
+        "size": 139218
+      }
+    },
+    {
+      "id": "cab81d76-bc8a-49d7-bc0d-3f03653e90e9",
+      "name": "ACCA_Social_BAU May 2024- JW signed (1).pdf",
+      "type": "file",
+      "extension": "pdf",
+      "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_83eb6390-5e93-428d-a2ab-b9cc6d147f32\\ACCA_Social_BAU May 2024- JW signed (1).pdf",
+      "metadata": {
+        "lastModified": "2024-10-31T14:57:00.000Z",
+        "size": 139559
+      }
+    },
+    {
+      "id": "4f40d14e-9825-4e43-b900-7582be414ffe",
+      "name": "ACCA_Social_BYA April 2024 - JW signed.pdf",
+      "type": "file",
+      "extension": "pdf",
+      "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_83eb6390-5e93-428d-a2ab-b9cc6d147f32\\ACCA_Social_BYA April 2024 - JW signed.pdf",
+      "metadata": {
+        "lastModified": "2024-10-31T14:57:00.000Z",
+        "size": 136748
+      }
+    },
+    {
+      "id": "b8a4f0e2-7af4-485b-9071-6b497907cdfd",
+      "name": "Folder 1",
+      "type": "folder",
+      "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_83eb6390-5e93-428d-a2ab-b9cc6d147f32\\Folder 1",
+      "children": [
+        {
+          "id": "be1cbe30-57de-43a2-b2b3-0cfff092a7e2",
+          "name": "Centersquare SOC 2 Type 2.pdf",
+          "type": "file",
+          "extension": "pdf",
+          "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_83eb6390-5e93-428d-a2ab-b9cc6d147f32\\Folder 1\\Centersquare SOC 2 Type 2.pdf",
+          "metadata": {
+            "lastModified": "2025-05-13T16:40:04.000Z",
+            "size": 721049
+          }
+        },
+        {
+          "id": "22cce0de-cb08-4c15-ac10-24a927fbc276",
+          "name": "INUMCE100699.pdf",
+          "type": "file",
+          "extension": "pdf",
+          "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_83eb6390-5e93-428d-a2ab-b9cc6d147f32\\Folder 1\\INUMCE100699.pdf",
+          "metadata": {
+            "lastModified": "2025-05-11T17:08:40.000Z",
+            "size": 21787
+          }
+        },
+        {
+          "id": "1047c82b-850b-4389-b073-0a71f2459831",
+          "name": "INUMCE100749.pdf",
+          "type": "file",
+          "extension": "pdf",
+          "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_83eb6390-5e93-428d-a2ab-b9cc6d147f32\\Folder 1\\INUMCE100749.pdf",
+          "metadata": {
+            "lastModified": "2025-05-11T17:08:44.000Z",
+            "size": 21858
+          }
+        }
+      ]
+    },
+    {
+      "id": "6a231682-9f64-4f6d-a6ea-300e42c7da9c",
+      "name": "Folder 2",
+      "type": "folder",
+      "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_83eb6390-5e93-428d-a2ab-b9cc6d147f32\\Folder 2",
+      "children": [
+        {
+          "id": "d56ba3f7-8186-4a5f-9f24-a48f264c2266",
+          "name": "dorbit_nexxen_policy_full_terms.pdf",
+          "type": "file",
+          "extension": "pdf",
+          "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_83eb6390-5e93-428d-a2ab-b9cc6d147f32\\Folder 2\\dorbit_nexxen_policy_full_terms.pdf",
+          "metadata": {
+            "lastModified": "2025-05-13T12:08:00.000Z",
+            "size": 868590
+          }
+        },
+        {
+          "id": "dca7d8a2-efbe-4550-9772-791936829964",
+          "name": "Yume Call 07052025 Notes.docx",
+          "type": "file",
+          "extension": "docx",
+          "path": "C:\\Users\\ShaiS\\Documents\\Repos\\file-flow-ai\\frontend\\uploads\\extracted_83eb6390-5e93-428d-a2ab-b9cc6d147f32\\Folder 2\\Yume Call 07052025 Notes.docx",
+          "metadata": {
+            "lastModified": "2025-05-13T15:46:52.000Z",
+            "size": 18469
+          }
+        }
+      ]
+    }
+  ]
+}
