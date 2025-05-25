@@ -66,11 +66,8 @@ class AgentAPI:
             self.sessions[session_id] = AgentRunner(
                 working_directory=wd, debug=self.debug
             )
-        elif (
-            working_directory
-            and self.sessions[session_id].working_directory != working_directory
-        ):
-            # Update working directory if provided and different from current
+        elif working_directory:
+            # Always update working directory if provided (to ensure session-specific directory is used)
             self.sessions[session_id].working_directory = working_directory
 
         return self.sessions[session_id]
@@ -89,7 +86,16 @@ class AgentAPI:
             AgentResponse: The structured response from the agent
         """
         agent = self.get_or_create_agent(session_id, working_directory)
+
+        # Store the intended working directory before running
+        intended_working_directory = working_directory or agent.working_directory
+
         result = agent.run(user_input)
+
+        # Ensure the working directory is always set to the session-specific directory
+        # This prevents the agent from permanently changing away from the session directory
+        if working_directory:
+            agent.working_directory = working_directory
 
         return AgentResponse(
             message=result.result_message,

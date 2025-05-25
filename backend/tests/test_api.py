@@ -27,10 +27,37 @@ class AgentAPIClient:
         response.raise_for_status()
         return response.json()
 
-    def create_session(self, working_directory: str = None) -> str:
+    def create_session(
+        self, working_directory: str = None, session_id: str = None
+    ) -> str:
         """Create a new agent session.
 
         Args:
+            working_directory (str, optional): Custom working directory for the agent
+            session_id (str, optional): Specific session ID to use instead of generating a new one
+
+        Returns:
+            str: The session ID
+        """
+        params = {}
+        if working_directory:
+            params["working_directory"] = working_directory
+        if session_id:
+            params["session_id"] = session_id
+
+        response = requests.post(f"{self.base_url}/sessions", params=params)
+        response.raise_for_status()
+        result = response.json()
+        self.session_id = result["session_id"]
+        return self.session_id
+
+    def create_session_with_id(
+        self, session_id: str, working_directory: str = None
+    ) -> str:
+        """Create a new agent session with a specific ID.
+
+        Args:
+            session_id (str): The specific session ID to create
             working_directory (str, optional): Custom working directory for the agent
 
         Returns:
@@ -40,7 +67,9 @@ class AgentAPIClient:
         if working_directory:
             params["working_directory"] = working_directory
 
-        response = requests.post(f"{self.base_url}/sessions", params=params)
+        response = requests.post(
+            f"{self.base_url}/sessions/{session_id}", params=params
+        )
         response.raise_for_status()
         result = response.json()
         self.session_id = result["session_id"]
@@ -181,34 +210,88 @@ class AgentAPIClient:
         return response.json()
 
 
-def run_interactive_session(client: AgentAPIClient, working_directory: str = None):
+def run_interactive_session(
+    client: AgentAPIClient, working_directory: str = None, session_id: str = None
+):
     """Run an interactive session with the Agent API.
 
     Args:
         client (AgentAPIClient): The API client to use
         working_directory (str, optional): Custom working directory for the agent
+        session_id (str, optional): Existing session ID to use instead of creating a new one
     """
     print("\nWelcome to the Agent API interactive session!")
     print("Type 'help' for available commands, 'exit' to quit.")
     print("Any other input will be sent directly to the agent.\n")
 
-    # Automatically create a session
-    try:
-        session_id = client.create_session(working_directory)
-        print(f"Created session: {session_id}")
-        if working_directory:
-            print(f"Using working directory: {working_directory}")
+    # Use existing session or create a new one
+    if session_id:
+        print(f"Attempting to use existing session: {session_id}")
+        client.session_id = session_id
 
-        # Verify session was created
-        sessions = client.list_sessions()
-        if session_id not in sessions:
-            print("Warning: Session was not found in active sessions list")
-        else:
-            print(f"Session verified in active sessions: {sessions}")
-    except Exception as e:
-        print(f"Error creating initial session: {str(e)}")
-        print("Please make sure the server is running at:", client.base_url)
-        return
+        # Verify session exists
+        try:
+            sessions = client.list_sessions()
+            if session_id not in sessions:
+                print(f"Session {session_id} was not found in active sessions list")
+                print(f"Available sessions: {sessions}")
+                print(f"Creating a new session with ID: {session_id}")
+
+                # Create a new session with the specific ID
+                try:
+                    created_session_id = client.create_session_with_id(
+                        session_id, working_directory
+                    )
+                    print(f"Created new session: {created_session_id}")
+                    if working_directory:
+                        print(f"Using working directory: {working_directory}")
+                except Exception as create_error:
+                    print(
+                        f"Error creating session with ID {session_id}: {str(create_error)}"
+                    )
+                    print("Creating a new session with auto-generated ID instead...")
+                    session_id = client.create_session(working_directory)
+                    print(f"Created new session: {session_id}")
+                    if working_directory:
+                        print(f"Using working directory: {working_directory}")
+            else:
+                print(f"Session verified in active sessions: {sessions}")
+        except Exception as e:
+            print(f"Error verifying session: {str(e)}")
+            print(f"Creating a new session with ID: {session_id}")
+
+            # Create a new session with the specific ID
+            try:
+                created_session_id = client.create_session_with_id(
+                    session_id, working_directory
+                )
+                print(f"Created new session: {created_session_id}")
+                if working_directory:
+                    print(f"Using working directory: {working_directory}")
+            except Exception as create_error:
+                print(
+                    f"Error creating session with ID {session_id}: {str(create_error)}"
+                )
+                print("Please make sure the server is running at:", client.base_url)
+                return
+    else:
+        # Automatically create a session
+        try:
+            session_id = client.create_session(working_directory)
+            print(f"Created session: {session_id}")
+            if working_directory:
+                print(f"Using working directory: {working_directory}")
+
+            # Verify session was created
+            sessions = client.list_sessions()
+            if session_id not in sessions:
+                print("Warning: Session was not found in active sessions list")
+            else:
+                print(f"Session verified in active sessions: {sessions}")
+        except Exception as e:
+            print(f"Error creating initial session: {str(e)}")
+            print("Please make sure the server is running at:", client.base_url)
+            return
 
     while True:
         try:
@@ -241,7 +324,11 @@ def run_interactive_session(client: AgentAPIClient, working_directory: str = Non
                 print(
                     "  exit                              - Exit the interactive session"
                 )
-                print("\nNote: Any other input will be sent directly to the agent.")
+                print(f"\nCurrent session ID: {session_id}")
+                print("Note: Any other input will be sent directly to the agent.")
+                print(
+                    "Tip: Use --session <session_id> when starting to reuse an existing session."
+                )
 
             elif cmd == "create_session":
                 working_dir = args[0] if args else None
@@ -435,6 +522,9 @@ if __name__ == "__main__":
         "--working-dir", type=str, default=None, help="Working directory for the agent"
     )
     parser.add_argument(
+        "--session", type=str, default=None, help="Existing session ID to use"
+    )
+    parser.add_argument(
         "--interactive", action="store_true", help="Start an interactive session"
     )
 
@@ -449,7 +539,7 @@ if __name__ == "__main__":
             print(f"Server status: {health}")
 
             # Start interactive session
-            run_interactive_session(client, args.working_dir)
+            run_interactive_session(client, args.working_dir, args.session)
         except requests.exceptions.ConnectionError:
             print(f"Error: Could not connect to server at {args.url}")
             print(

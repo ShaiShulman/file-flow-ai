@@ -6,6 +6,7 @@ from typing import Dict, Any, List, Optional
 
 from api_server import AgentAPI, UserInput, AgentResponse
 from categories import categories_manager
+from path_utils import get_session_working_directory
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -55,17 +56,57 @@ async def get_tokens(session_id: str):
 
 
 @app.post("/sessions", response_model=Dict[str, str])
-async def create_session(working_directory: Optional[str] = None):
+async def create_session(
+    working_directory: Optional[str] = None, session_id: Optional[str] = None
+):
     """Create a new agent session.
 
     Args:
-        working_directory (str, optional): Custom working directory for the agent
+        working_directory (str, optional): Custom working directory for the agent (ignored - session-specific directory is used)
+        session_id (str, optional): Specific session ID to use instead of generating a new one
 
     Returns:
         Dict[str, str]: Dictionary containing the session ID
     """
-    session_id = str(uuid.uuid4())
-    agent_api.get_or_create_agent(session_id, working_directory)
+    if session_id is None:
+        session_id = str(uuid.uuid4())
+    else:
+        # Check if session already exists
+        if session_id in agent_api.sessions:
+            raise HTTPException(
+                status_code=409, detail=f"Session {session_id} already exists"
+            )
+
+    # Use the session-specific working directory
+    session_working_directory = get_session_working_directory(session_id)
+    agent_api.get_or_create_agent(session_id, session_working_directory)
+
+    return {"session_id": session_id}
+
+
+@app.post("/sessions/{session_id}", response_model=Dict[str, str])
+async def create_session_with_id(
+    session_id: str, working_directory: Optional[str] = None
+):
+    """Create a new agent session with a specific ID.
+
+    Args:
+        session_id (str): The specific session ID to create
+        working_directory (str, optional): Custom working directory for the agent (ignored - session-specific directory is used)
+
+    Returns:
+        Dict[str, str]: Dictionary containing the session ID
+    """
+    # Check if session already exists
+    if session_id in agent_api.sessions:
+        raise HTTPException(
+            status_code=409, detail=f"Session {session_id} already exists"
+        )
+
+    # Use the session-specific working directory
+    session_working_directory = get_session_working_directory(session_id)
+    agent_api.get_or_create_agent(session_id, session_working_directory)
+
     return {"session_id": session_id}
 
 
@@ -81,9 +122,10 @@ async def run_agent(session_id: str, user_input: UserInput):
         AgentResponse: The structured response from the agent
     """
     try:
-        result = agent_api.run_agent(
-            session_id, user_input.message, user_input.working_directory
-        )
+        # Get the working directory based on the session ID
+        working_directory = get_session_working_directory(session_id)
+
+        result = agent_api.run_agent(session_id, user_input.message, working_directory)
 
         # Update the agent's token counts in the response
         agent = agent_api.sessions[session_id]
