@@ -3,12 +3,7 @@
     {
       "id": "cat-1",
       "name": "Incorporation documents",
-      "options": [
-        "certificate of incorporation",
-        "articles of incorporation",
-        "deeds of incorporation",
-        "bylaws"
-      ]
+      "options": ["certificate of incorporation", "articles of incorporation"]
     },
     {
       "id": "cat-2",
@@ -26,27 +21,23 @@
     {
       "id": "cat-3",
       "name": "Authorization and signatory powers",
-      "options": [
-        "Power of attorney",
-        "POA",
-        "proxy",
-        "authorization letter"
-      ]
+      "options": ["Power of attorney", "POA", "proxy", "authorization letter"]
     },
     {
       "id": "cat-4",
       "name": "Shareholder documents",
       "options": [
         "minutes of the shareholders",
-        "resolutions shareholders",
+        "EGM Minutes",
+        "AGM Minutes",
+        "General Meeting minutes",
         "shareholder's resolution",
-        "shareholder's meeting",
-        "general meeting"
+        "shareholder's meeting"
       ]
     },
     {
       "id": "cat-5",
-      "name": "Articles",
+      "name": "Articles of incorporation",
       "options": [
         "articles of incorporation",
         "articles of association",

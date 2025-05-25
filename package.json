@@ -1,0 +1,10 @@
+{
+  "dependencies": {
+    "@types/uuid": "^10.0.0",
+    "jszip": "^3.10.1",
+    "uuid": "^11.1.0"
+  },
+  "devDependencies": {
+    "@types/jszip": "^3.4.1"
+  }
+}
