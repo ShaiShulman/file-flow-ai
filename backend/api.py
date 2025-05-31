@@ -230,3 +230,31 @@ async def clear_all_categories():
         Dict[str, str]: A dictionary containing the operation status and message
     """
     return categories_manager.clear_categories()
+
+
+@app.put("/categories/reset", response_model=Dict[str, str])
+async def reset_categories(categories: Dict[str, List[str]]):
+    """Reset all categories with a new set of categories.
+
+    Args:
+        categories (Dict[str, List[str]]): Dictionary of category names and their values
+
+    Returns:
+        Dict[str, str]: A dictionary containing the operation status and message
+    """
+    try:
+        # First clear all existing categories
+        categories_manager.clear_categories()
+
+        # Then add all new categories
+        for name, values in categories.items():
+            categories_manager.add_category(name, values)
+
+        return {
+            "status": "success",
+            "message": f"Categories reset successfully with {len(categories)} categories",
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Failed to reset categories: {str(e)}"
+        )

@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import FileExplorer from "@/features/file-explorer/components/file-explorer";
 import ChatInterface from "@/features/chat/components/chat-interface";
 import BottomPanel from "@/components/bottom-panel";
@@ -11,14 +11,24 @@ import { toast } from "@/components/ui/use-toast";
 import type { FileType, FolderType } from "@/lib/types";
 import { useState } from "react";
 import { downloadFolderAsZip } from "@/lib/actions/folder-manager";
+import { SessionProvider, useSessionContext } from "@/features/session/context";
+import { rescanFolderStructure } from "@/lib/utils/folder-utils";
 
-export default function Home() {
+function HomeContent() {
   const [selectedFile, setSelectedFile] = useState<FileType | null>(null);
   const [currentFolder, setCurrentFolder] = useState<FolderType | undefined>(
     undefined
   );
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
+
+  // Session management from context
+  const {
+    sessionState,
+    createSession,
+    updateAffectedFiles,
+    clearAffectedFiles,
+  } = useSessionContext();
 
   const handleFileSelect = (file: FileType) => {
     setSelectedFile(file);
@@ -27,7 +37,74 @@ export default function Home() {
   const handleFilesExtracted = (files: FolderType, folderId: string) => {
     setCurrentFolder(files);
     setCurrentFolderId(folderId);
+    // Clear affected files when new files are uploaded
+    clearAffectedFiles();
   };
+
+  // Handle folder structure changes after agent responses
+  const handleFolderStructureChange = async () => {
+    console.log(
+      "[PAGE] handleFolderStructureChange called. Current folder ID:",
+      currentFolderId
+    );
+
+    if (!currentFolderId) {
+      console.log("[PAGE] No current folder ID, skipping rescan");
+      return;
+    }
+
+    try {
+      console.log("[PAGE] Starting folder structure rescan...");
+      const updatedStructure = await rescanFolderStructure(currentFolderId);
+
+      if (updatedStructure) {
+        console.log(
+          "[PAGE] Received updated structure. Setting new currentFolder..."
+        );
+        console.log(
+          "[PAGE] Updated structure children count:",
+          updatedStructure.children.length
+        );
+
+        setCurrentFolder(updatedStructure);
+
+        console.log("[PAGE] currentFolder state updated successfully");
+
+        toast({
+          title: "File Structure Updated",
+          description: "The file explorer has been refreshed to show changes",
+        });
+      } else {
+        console.log("[PAGE] No updated structure received from rescan");
+      }
+    } catch (error) {
+      console.error("[PAGE] Failed to rescan folder structure:", error);
+      toast({
+        title: "Refresh Warning",
+        description:
+          "Failed to refresh file structure. You may need to reload the page.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Create session when files are uploaded
+  useEffect(() => {
+    if (
+      currentFolderId &&
+      !sessionState.sessionId &&
+      !sessionState.isCreating
+    ) {
+      // Get the working directory path for the uploaded folder
+      const workingDirectory = `/uploads/extracted_${currentFolderId}`;
+      createSession(currentFolderId, workingDirectory);
+    }
+  }, [
+    currentFolderId,
+    sessionState.sessionId,
+    sessionState.isCreating,
+    createSession,
+  ]);
 
   const handleDownload = async () => {
     try {
@@ -95,13 +172,21 @@ export default function Home() {
         {/* Left side - Chat Interface */}
         <Card className="w-1/2 p-4 flex flex-col h-[calc(100vh-140px)]">
           <Suspense fallback={<div>Loading chat...</div>}>
-            <ChatInterface />
+            <ChatInterface
+              sessionId={sessionState.sessionId}
+              workingDirectory={
+                currentFolderId
+                  ? `/uploads/extracted_${currentFolderId}`
+                  : undefined
+              }
+              updateAffectedFiles={updateAffectedFiles}
+              onFolderStructureChange={handleFolderStructureChange}
+            />
           </Suspense>
         </Card>
 
         {/* Right side - File Explorer and Bottom Panel */}
         <div className="w-1/2 flex flex-col h-[calc(100vh-140px)] gap-4">
-          {/* File Explorer */}
           <Card className="flex-1 p-4 overflow-auto">
             <Suspense fallback={<div>Loading files...</div>}>
               <FileExplorer
@@ -121,5 +206,13 @@ export default function Home() {
       </div>
       <Toaster />
     </main>
+  );
+}
+
+export default function Home() {
+  return (
+    <SessionProvider>
+      <HomeContent />
+    </SessionProvider>
   );
 }

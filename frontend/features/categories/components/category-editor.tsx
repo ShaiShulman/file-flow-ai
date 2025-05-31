@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, X, Save, Edit, Trash2 } from "lucide-react";
+import { Plus, X, Save, Edit, Trash2, Loader2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import type { Category } from "@/lib/types";
 import { v4 as uuidv4 } from "uuid";
@@ -17,15 +17,45 @@ import {
   getCategories,
 } from "../actions";
 
+interface LoadingStates {
+  savingCategory: string | null;
+  deletingCategory: string | null;
+  addingOption: string | null;
+  deletingOption: { categoryId: string; option: string } | null;
+}
+
 export default function CategoryEditor() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [editingCategory, setEditingCategory] = useState<string | null>(null);
   const [newOptions, setNewOptions] = useState<Record<string, string>>({});
   const [tempCategory, setTempCategory] = useState<Category | null>(null);
+  const [loadingStates, setLoadingStates] = useState<LoadingStates>({
+    savingCategory: null,
+    deletingCategory: null,
+    addingOption: null,
+    deletingOption: null,
+  });
   const { toast } = useToast();
 
   // Ref for the new category
   const newCategoryRef = useRef<HTMLDivElement>(null);
+
+  // Helper to cancel operation (UI-only)
+  const cancelOperation = (
+    operationType: keyof LoadingStates,
+    key?: string
+  ) => {
+    setLoadingStates((prev) => ({
+      ...prev,
+      [operationType]: null,
+    }));
+
+    // If cancelling edit, also reset editing state
+    if (operationType === "savingCategory") {
+      setEditingCategory(null);
+      setTempCategory(null);
+    }
+  };
 
   // Load categories on mount
   useEffect(() => {
@@ -72,11 +102,14 @@ export default function CategoryEditor() {
   const handleSaveCategory = async (categoryId: string, newName: string) => {
     if (!newName.trim()) return;
 
+    setLoadingStates((prev) => ({ ...prev, savingCategory: categoryId }));
+
     try {
       if (tempCategory && categoryId === tempCategory.id) {
         // This is a new category
-        await addCategory({ ...tempCategory, name: newName });
-        setCategories([...categories, { ...tempCategory, name: newName }]);
+        const newCategory = { ...tempCategory, name: newName };
+        await addCategory(newCategory);
+        setCategories([...categories, newCategory]);
         setTempCategory(null);
       } else {
         // This is an existing category
@@ -87,26 +120,30 @@ export default function CategoryEditor() {
           )
         );
       }
+
       setEditingCategory(null);
       toast({
         title: "Category saved",
         description: "Category has been saved successfully",
       });
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Error",
         description: "Failed to save category",
         variant: "destructive",
       });
+    } finally {
+      setLoadingStates((prev) => ({ ...prev, savingCategory: null }));
     }
   };
 
   const handleCancelEdit = () => {
-    setEditingCategory(null);
-    setTempCategory(null);
+    cancelOperation("savingCategory");
   };
 
   const handleDeleteCategory = async (categoryId: string) => {
+    setLoadingStates((prev) => ({ ...prev, deletingCategory: categoryId }));
+
     try {
       await deleteCategory(categoryId);
       setCategories(categories.filter((cat) => cat.id !== categoryId));
@@ -114,18 +151,22 @@ export default function CategoryEditor() {
         title: "Category deleted",
         description: "Category has been deleted successfully",
       });
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Error",
         description: "Failed to delete category",
         variant: "destructive",
       });
+    } finally {
+      setLoadingStates((prev) => ({ ...prev, deletingCategory: null }));
     }
   };
 
   const handleAddOption = async (categoryId: string) => {
     const newOption = newOptions[categoryId];
     if (!newOption?.trim()) return;
+
+    setLoadingStates((prev) => ({ ...prev, addingOption: categoryId }));
 
     try {
       await addCategoryOption(categoryId, newOption);
@@ -144,16 +185,23 @@ export default function CategoryEditor() {
         title: "Option added",
         description: "New option has been added successfully",
       });
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Error",
         description: "Failed to add option",
         variant: "destructive",
       });
+    } finally {
+      setLoadingStates((prev) => ({ ...prev, addingOption: null }));
     }
   };
 
   const handleDeleteOption = async (categoryId: string, option: string) => {
+    setLoadingStates((prev) => ({
+      ...prev,
+      deletingOption: { categoryId, option },
+    }));
+
     try {
       await deleteCategoryOption(categoryId, option);
       setCategories(
@@ -167,12 +215,14 @@ export default function CategoryEditor() {
         title: "Option deleted",
         description: "Option has been deleted successfully",
       });
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Error",
         description: "Failed to delete option",
         variant: "destructive",
       });
+    } finally {
+      setLoadingStates((prev) => ({ ...prev, deletingOption: null }));
     }
   };
 
@@ -215,6 +265,7 @@ export default function CategoryEditor() {
                     }}
                     className="h-7 text-sm"
                     autoFocus
+                    disabled={loadingStates.savingCategory === category.id}
                   />
                   <Button
                     size="sm"
@@ -222,15 +273,25 @@ export default function CategoryEditor() {
                     onClick={() =>
                       handleSaveCategory(category.id, category.name)
                     }
+                    disabled={loadingStates.savingCategory === category.id}
                     className="h-7 w-7 p-0"
                   >
-                    <Save className="h-3.5 w-3.5" />
+                    {loadingStates.savingCategory === category.id ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Save className="h-3.5 w-3.5" />
+                    )}
                   </Button>
                   <Button
                     size="sm"
                     variant="ghost"
                     onClick={handleCancelEdit}
                     className="h-7 w-7 p-0"
+                    title={
+                      loadingStates.savingCategory === category.id
+                        ? "Cancel operation"
+                        : "Cancel edit"
+                    }
                   >
                     <X className="h-3.5 w-3.5" />
                   </Button>
@@ -243,6 +304,7 @@ export default function CategoryEditor() {
                       size="sm"
                       variant="ghost"
                       onClick={() => handleEditCategory(category.id)}
+                      disabled={loadingStates.deletingCategory === category.id}
                       className="h-7 w-7 p-0"
                     >
                       <Edit className="h-3.5 w-3.5" />
@@ -251,31 +313,76 @@ export default function CategoryEditor() {
                       size="sm"
                       variant="ghost"
                       onClick={() => handleDeleteCategory(category.id)}
+                      disabled={loadingStates.deletingCategory === category.id}
                       className="h-7 w-7 p-0"
                     >
-                      <Trash2 className="h-3.5 w-3.5" />
+                      {loadingStates.deletingCategory === category.id ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-3.5 w-3.5" />
+                      )}
                     </Button>
+                    {loadingStates.deletingCategory === category.id && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => cancelOperation("deletingCategory")}
+                        className="h-7 w-7 p-0 ml-1"
+                        title="Cancel deletion"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
                   </div>
                 </>
               )}
             </div>
 
             <div className="flex flex-wrap gap-1 mb-2">
-              {category.options.map((option) => (
-                <Badge
-                  key={option}
-                  variant="outline"
-                  className="flex items-center gap-1 px-2 py-0.5 group"
-                >
-                  {option}
-                  <button
-                    onClick={() => handleDeleteOption(category.id, option)}
-                    className="opacity-0 group-hover:opacity-100 ml-1"
+              {category.options.map((option, index) => {
+                const isDeleting =
+                  loadingStates.deletingOption?.categoryId === category.id &&
+                  loadingStates.deletingOption?.option === option;
+
+                return (
+                  <Badge
+                    key={`${category.id}-${option}-${index}`}
+                    variant="outline"
+                    className="flex items-center gap-1 px-2 py-0.5 group"
                   >
-                    <X className="h-3 w-3" />
-                  </button>
-                </Badge>
-              ))}
+                    {option}
+                    <div className="flex items-center ml-1">
+                      {isDeleting ? (
+                        <>
+                          <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                          <button
+                            onClick={() =>
+                              cancelOperation(
+                                "deletingOption",
+                                `${category.id}-${option}`
+                              )
+                            }
+                            className="hover:bg-destructive/10 rounded"
+                            title="Cancel deletion"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          onClick={() =>
+                            handleDeleteOption(category.id, option)
+                          }
+                          className="opacity-0 group-hover:opacity-100"
+                          disabled={isDeleting}
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      )}
+                    </div>
+                  </Badge>
+                );
+              })}
 
               <div className="flex items-center">
                 <Input
@@ -293,16 +400,35 @@ export default function CategoryEditor() {
                       handleAddOption(category.id);
                     }
                   }}
+                  disabled={loadingStates.addingOption === category.id}
                 />
                 <Button
                   size="sm"
                   variant="ghost"
                   onClick={() => handleAddOption(category.id)}
-                  disabled={!newOptions[category.id]?.trim()}
+                  disabled={
+                    !newOptions[category.id]?.trim() ||
+                    loadingStates.addingOption === category.id
+                  }
                   className="h-6 w-6 p-0 ml-1"
                 >
-                  <Plus className="h-3 w-3" />
+                  {loadingStates.addingOption === category.id ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <Plus className="h-3 w-3" />
+                  )}
                 </Button>
+                {loadingStates.addingOption === category.id && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => cancelOperation("addingOption")}
+                    className="h-6 w-6 p-0 ml-1"
+                    title="Cancel adding option"
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                )}
               </div>
             </div>
           </div>
@@ -321,6 +447,7 @@ export default function CategoryEditor() {
                 }
                 className="h-7 text-sm"
                 autoFocus
+                disabled={loadingStates.savingCategory === tempCategory.id}
               />
               <Button
                 size="sm"
@@ -328,15 +455,25 @@ export default function CategoryEditor() {
                 onClick={() =>
                   handleSaveCategory(tempCategory.id, tempCategory.name)
                 }
+                disabled={loadingStates.savingCategory === tempCategory.id}
                 className="h-7 w-7 p-0"
               >
-                <Save className="h-3.5 w-3.5" />
+                {loadingStates.savingCategory === tempCategory.id ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Save className="h-3.5 w-3.5" />
+                )}
               </Button>
               <Button
                 size="sm"
                 variant="ghost"
                 onClick={handleCancelEdit}
                 className="h-7 w-7 p-0"
+                title={
+                  loadingStates.savingCategory === tempCategory.id
+                    ? "Cancel operation"
+                    : "Cancel edit"
+                }
               >
                 <X className="h-3.5 w-3.5" />
               </Button>

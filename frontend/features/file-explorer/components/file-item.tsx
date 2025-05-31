@@ -1,24 +1,45 @@
-"use client"
+"use client";
 
-import type { FileType } from "@/lib/types"
-import { FileText, FileIcon as FilePdf, Edit, Trash2, AlertCircle } from "lucide-react"
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import type { FileType } from "@/lib/types";
+import {
+  FileText,
+  FileIcon as FilePdf,
+  Edit,
+  Trash2,
+  AlertCircle,
+  Zap,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface FileItemProps {
-  file: FileType
-  isSelected: boolean
-  paddingLeft: number
-  onSelect: (file: FileType) => void
+  file: FileType;
+  isSelected: boolean;
+  paddingLeft: number;
+  onSelect: (file: FileType) => void;
+  isAffected?: boolean;
 }
 
-export default function FileItem({ file, isSelected, paddingLeft, onSelect }: FileItemProps) {
+export default function FileItem({
+  file,
+  isSelected,
+  paddingLeft,
+  onSelect,
+  isAffected = false,
+}: FileItemProps) {
   return (
     <div
       className={cn(
         "flex items-center py-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md cursor-pointer group",
         isSelected && "bg-slate-100 dark:bg-slate-800",
+        isAffected &&
+          "bg-green-50 dark:bg-green-900/20 border-l-2 border-green-500"
       )}
       style={{ paddingLeft: `${paddingLeft}px` }}
       onClick={() => onSelect(file)}
@@ -29,6 +50,21 @@ export default function FileItem({ file, isSelected, paddingLeft, onSelect }: Fi
         <FileText className="h-4 w-4 text-blue-500 mr-2 flex-shrink-0" />
       )}
       <span className="truncate">{file.name}</span>
+
+      {isAffected && (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="ml-2">
+                <Zap className="h-4 w-4 text-green-600 flex-shrink-0" />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Modified by AI Agent</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      )}
 
       {file.changed && (
         <TooltipProvider>
@@ -54,5 +90,5 @@ export default function FileItem({ file, isSelected, paddingLeft, onSelect }: Fi
         </Button>
       </div>
     </div>
-  )
+  );
 }

@@ -6,9 +6,7 @@ import fs from "fs/promises";
 import path from "path";
 import JSZip from "jszip";
 import type { FolderType, FileType } from "@/lib/types";
-
-const UPLOAD_BASE_PATH =
-  process.env.UPLOADS_FOLDER || path.join(process.cwd(), "uploads");
+import { UPLOAD_BASE_PATH } from "@/lib/const";
 
 // Ensure the base upload directory exists
 async function ensureUploadDir() {

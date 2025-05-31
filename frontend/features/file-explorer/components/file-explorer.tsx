@@ -5,6 +5,7 @@ import type { FileType, FolderType } from "@/lib/types";
 import { sampleData } from "../data";
 import FolderItem from "./folder-item";
 import { Upload, Folder, FileText } from "lucide-react";
+import { useSessionContext } from "@/features/session/context";
 
 // Sample data constant for empty state
 const SAMPLE_DATA: FolderType = {
@@ -87,6 +88,13 @@ export default function FileExplorer({
   initialData,
   currentFolder,
 }: FileExplorerProps) {
+  console.log("[FILE-EXPLORER] Component rendered. Props:", {
+    hasInitialData: !!initialData,
+    hasCurrentFolder: !!currentFolder,
+    currentFolderId: currentFolder?.id,
+    currentFolderChildrenCount: currentFolder?.children?.length,
+  });
+
   const [fileSystem, setFileSystem] = useState<FolderType | null>(
     initialData || null
   );
@@ -96,6 +104,10 @@ export default function FileExplorer({
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(
     new Set(["root"])
   );
+
+  // Get affected files from session context
+  const { sessionState } = useSessionContext();
+  const affectedFiles = sessionState.affectedFiles;
 
   // Expanded folders for sample data (show all expanded)
   const sampleExpandedFolders = new Set([
@@ -107,12 +119,40 @@ export default function FileExplorer({
 
   // Update file system when initialData or currentFolder changes
   useEffect(() => {
+    console.log("[FILE-EXPLORER] useEffect triggered. Checking for updates...");
+    console.log(
+      "[FILE-EXPLORER] currentFolder:",
+      currentFolder?.id,
+      "children:",
+      currentFolder?.children?.length
+    );
+    console.log(
+      "[FILE-EXPLORER] initialData:",
+      initialData?.id,
+      "children:",
+      initialData?.children?.length
+    );
+
     if (currentFolder) {
+      console.log(
+        "[FILE-EXPLORER] Updating fileSystem with currentFolder:",
+        currentFolder.id
+      );
       setFileSystem(currentFolder);
       setExpandedFolders(new Set([currentFolder.id]));
+      console.log(
+        "[FILE-EXPLORER] fileSystem state updated with currentFolder"
+      );
     } else if (initialData) {
+      console.log(
+        "[FILE-EXPLORER] Updating fileSystem with initialData:",
+        initialData.id
+      );
       setFileSystem(initialData);
       setExpandedFolders(new Set([initialData.id]));
+      console.log("[FILE-EXPLORER] fileSystem state updated with initialData");
+    } else {
+      console.log("[FILE-EXPLORER] No folder data available");
     }
   }, [initialData, currentFolder]);
 
@@ -140,6 +180,7 @@ export default function FileExplorer({
   const dummySelectFile = () => {};
 
   if (!fileSystem) {
+    console.log("[FILE-EXPLORER] Rendering empty state (no fileSystem)");
     return (
       <div className="h-full overflow-hidden relative">
         {/* Centered overlay message - not affected by grayscale */}
@@ -175,6 +216,13 @@ export default function FileExplorer({
       </div>
     );
   }
+
+  console.log("[FILE-EXPLORER] Rendering file tree. FileSystem:", {
+    id: fileSystem.id,
+    name: fileSystem.name,
+    childrenCount: fileSystem.children.length,
+    expandedFoldersCount: expandedFolders.size,
+  });
 
   return (
     <div className="h-full overflow-auto">

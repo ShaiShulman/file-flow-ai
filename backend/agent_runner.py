@@ -113,7 +113,6 @@ class AgentRunner:
                     elif key == "working_directory":
                         event_str += f"\n  Working Directory: {value}"
                     elif key == "actions":
-                        # Add new actions to the list
                         self.actions = value
                     else:
                         event_str += f"\n  {key}: {value}"

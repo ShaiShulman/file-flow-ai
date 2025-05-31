@@ -2,7 +2,8 @@
   "Incorporation documents": [
     "certificate of incorporation",
     "articles of incorporation",
-    "deeds of incorporation"
+    "bylaws",
+    "certificate of merger"
   ],
   "Board documents": [
     "minutes of the board of directors",
@@ -21,15 +22,16 @@
   ],
   "Shareholder documents": [
     "minutes of the shareholders",
-    "resolutions shareholders",
+    "EGM Minutes",
+    "AGM Minutes",
+    "General Meeting minutes",
     "shareholder's resolution",
-    "shareholder's meeting",
-    "general meeting"
+    "shareholder's meeting"
   ],
-  "Articles": [
+  "Articles of incorporation": [
     "articles of incorporation",
-    "articles of association",
     "deed of incorporation",
-    "deed of foundation"
-  ]
+    "kdldasdsada"
+  ],
+  "New Category": []
 }

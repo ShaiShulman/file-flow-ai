@@ -3,7 +3,12 @@
     {
       "id": "cat-1",
       "name": "Incorporation documents",
-      "options": ["certificate of incorporation", "articles of incorporation"]
+      "options": [
+        "certificate of incorporation",
+        "articles of incorporation",
+        "bylaws",
+        "certificate of merger"
+      ]
     },
     {
       "id": "cat-2",
@@ -21,7 +26,12 @@
     {
       "id": "cat-3",
       "name": "Authorization and signatory powers",
-      "options": ["Power of attorney", "POA", "proxy", "authorization letter"]
+      "options": [
+        "Power of attorney",
+        "POA",
+        "proxy",
+        "authorization letter"
+      ]
     },
     {
       "id": "cat-4",
@@ -40,10 +50,14 @@
       "name": "Articles of incorporation",
       "options": [
         "articles of incorporation",
-        "articles of association",
         "deed of incorporation",
-        "deed of foundation"
+        "kdldasdsada"
       ]
+    },
+    {
+      "id": "c34bb6bc-558f-46fa-847c-263fa061774c",
+      "name": "New Category",
+      "options": []
     }
   ]
 }
