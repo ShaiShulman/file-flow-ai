@@ -38,6 +38,33 @@ export default function FolderItem({
   const { sessionState } = useSessionContext();
   const affectedFiles = sessionState.affectedFiles;
 
+  // Check if this folder is affected
+  const isFolderAffected = affectedFiles.some((affectedPath) => {
+    // Extract just the filename/folder name from the affected path
+    const affectedName = affectedPath.split("/").pop() || affectedPath;
+    const folderName = folder.name;
+
+    // Check for exact matches only:
+    // 1. Direct name match (for renamed folders)
+    // 2. Exact path match (if we have full paths)
+    const matches =
+      affectedName === folderName ||
+      affectedPath === folderName ||
+      (folder.path && affectedPath === folder.path);
+
+    return matches;
+  });
+
+  console.log(
+    `[FOLDER-ITEM] Checking folder "${folder.name}" - affected: ${isFolderAffected}`,
+    {
+      folderPath: folder.path,
+      folderName: folder.name,
+      affectedFiles,
+      affectedFilesNames: affectedFiles.map((path) => path.split("/").pop()),
+    }
+  );
+
   // Recursive function to render child items
   const renderItem = (item: FileSystemItem, currentDepth: number) => {
     if (item.type === "folder") {
@@ -54,10 +81,17 @@ export default function FolderItem({
       );
     } else {
       // Check if this file is affected by comparing paths
-      const isAffected = affectedFiles.some(
-        (affectedPath) =>
-          affectedPath.includes(item.name) || item.path?.includes(affectedPath)
-      );
+      const isAffected = affectedFiles.some((affectedPath) => {
+        const affectedName = affectedPath.split("/").pop() || affectedPath;
+        const fileName = item.name;
+
+        // Check for exact matches only
+        return (
+          affectedName === fileName ||
+          affectedPath === fileName ||
+          (item.path && affectedPath === item.path)
+        );
+      });
 
       return (
         <FileItem
@@ -77,7 +111,10 @@ export default function FolderItem({
       <div
         className={cn(
           "flex items-center py-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md cursor-pointer group",
-          isRoot && "font-semibold"
+          isRoot && "font-semibold",
+          isFolderAffected &&
+            !isRoot &&
+            "bg-green-50 dark:bg-green-900/20 border-l-2 border-green-500"
         )}
         style={{ paddingLeft: isRoot ? "8px" : `${paddingLeft}px` }}
         onClick={() => onToggleFolder(folder.id)}
@@ -90,12 +127,32 @@ export default function FolderItem({
         {isRoot ? (
           <Database className="h-4 w-4 text-slate-700 dark:text-slate-300 mr-2 flex-shrink-0" />
         ) : (
-          <Folder className="h-4 w-4 text-blue-500 mr-2 flex-shrink-0" />
+          <Folder
+            className={cn(
+              "h-4 w-4 mr-2 flex-shrink-0",
+              isFolderAffected ? "text-green-600" : "text-blue-500"
+            )}
+          />
         )}
-        <span className="truncate">{folder.name}</span>
+        <span
+          className={cn(
+            "truncate",
+            isFolderAffected &&
+              !isRoot &&
+              "font-medium text-green-700 dark:text-green-300"
+          )}
+        >
+          {folder.name}
+        </span>
         <span className="ml-2 text-xs text-slate-500">
           ({folder.children.length})
         </span>
+
+        {isFolderAffected && !isRoot && (
+          <span className="ml-2 text-xs text-green-600 dark:text-green-400 font-medium">
+            ⚡ Modified
+          </span>
+        )}
 
         <div className="ml-auto opacity-0 group-hover:opacity-100 flex items-center">
           <Button size="icon" variant="ghost" className="h-7 w-7">

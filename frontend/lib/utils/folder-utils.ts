@@ -112,3 +112,83 @@ export async function rescanFolderStructure(
     return null;
   }
 }
+
+// Function to optimize affected files - consolidate child changes to parent folders
+export async function optimizeAffectedFiles(
+  affectedFiles: string[],
+  folderStructure?: FolderType
+): Promise<string[]> {
+  if (!folderStructure || affectedFiles.length === 0) {
+    return affectedFiles;
+  }
+
+  console.log("[FOLDER-UTILS] Optimizing affected files:", affectedFiles);
+
+  // Build a map of all file paths in the structure
+  const allFilePaths = new Set<string>();
+  const folderPaths = new Map<string, string[]>(); // folder path -> array of child file paths
+
+  function walkStructure(item: FolderType | FileType, parentPath = "") {
+    const itemPath = parentPath ? `${parentPath}/${item.name}` : item.name;
+
+    if (item.type === "folder") {
+      const childPaths: string[] = [];
+      folderPaths.set(itemPath, childPaths);
+
+      item.children?.forEach((child) => {
+        walkStructure(child, itemPath);
+        if (child.type === "file") {
+          const childPath = `${itemPath}/${child.name}`;
+          allFilePaths.add(childPath);
+          childPaths.push(childPath);
+        }
+      });
+    } else {
+      allFilePaths.add(itemPath);
+    }
+  }
+
+  walkStructure(folderStructure);
+
+  // Check each folder to see if ALL its children are affected
+  const optimizedFiles = new Set(affectedFiles);
+
+  for (const [folderPath, childFiles] of folderPaths) {
+    if (childFiles.length === 0) continue;
+
+    // Check if ALL children of this folder are in the affected files
+    const allChildrenAffected = childFiles.every((childPath) =>
+      affectedFiles.some(
+        (affectedPath) =>
+          affectedPath.includes(childPath) || childPath.includes(affectedPath)
+      )
+    );
+
+    if (allChildrenAffected && childFiles.length > 1) {
+      console.log(
+        "[FOLDER-UTILS] All children of folder affected, consolidating:",
+        folderPath
+      );
+
+      // Remove all child files from affected list
+      childFiles.forEach((childPath) => {
+        affectedFiles.forEach((affectedPath) => {
+          if (
+            affectedPath.includes(childPath) ||
+            childPath.includes(affectedPath)
+          ) {
+            optimizedFiles.delete(affectedPath);
+          }
+        });
+      });
+
+      // Add the folder instead
+      optimizedFiles.add(folderPath);
+    }
+  }
+
+  const result = Array.from(optimizedFiles);
+  console.log("[FOLDER-UTILS] Optimized affected files:", result);
+
+  return result;
+}

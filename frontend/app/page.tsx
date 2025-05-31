@@ -26,9 +26,20 @@ function HomeContent() {
   const {
     sessionState,
     createSession,
-    updateAffectedFiles,
+    updateAffectedFiles: originalUpdateAffectedFiles,
     clearAffectedFiles,
   } = useSessionContext();
+
+  // Wrapper for updateAffectedFiles that optimizes the files
+  const updateAffectedFiles = (files: string[]) => {
+    console.log("[PAGE] Received affected files:", files);
+
+    // Don't update immediately - let handleFolderStructureChange handle it
+    // after the structure is rescanned so paths match properly
+    console.log(
+      "[PAGE] Deferring affected files update until after structure rescan"
+    );
+  };
 
   const handleFileSelect = (file: FileType) => {
     setSelectedFile(file);
@@ -42,11 +53,12 @@ function HomeContent() {
   };
 
   // Handle folder structure changes after agent responses
-  const handleFolderStructureChange = async () => {
+  const handleFolderStructureChange = async (newAffectedFiles?: string[]) => {
     console.log(
       "[PAGE] handleFolderStructureChange called. Current folder ID:",
       currentFolderId
     );
+    console.log("[PAGE] New affected files:", newAffectedFiles);
 
     if (!currentFolderId) {
       console.log("[PAGE] No current folder ID, skipping rescan");
@@ -67,6 +79,12 @@ function HomeContent() {
         );
 
         setCurrentFolder(updatedStructure);
+
+        // If we have new affected files, update them after the structure is updated
+        if (newAffectedFiles) {
+          console.log("[PAGE] Updating affected files after structure rescan");
+          originalUpdateAffectedFiles(newAffectedFiles);
+        }
 
         console.log("[PAGE] currentFolder state updated successfully");
 
@@ -180,7 +198,9 @@ function HomeContent() {
                   : undefined
               }
               updateAffectedFiles={updateAffectedFiles}
-              onFolderStructureChange={handleFolderStructureChange}
+              onFolderStructureChange={(affectedFiles) =>
+                handleFolderStructureChange(affectedFiles)
+              }
             />
           </Suspense>
         </Card>

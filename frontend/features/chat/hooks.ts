@@ -32,7 +32,7 @@ export interface ChatState {
 export function useChat(
   sessionId: string | null,
   updateAffectedFiles?: (files: string[]) => void,
-  onFolderStructureChange?: () => void
+  onFolderStructureChange?: (affectedFiles?: string[]) => void
 ) {
   const [chatState, setChatState] = useState<ChatState>({
     messages: [],
@@ -121,7 +121,7 @@ export function useChat(
             "[CHAT-HOOKS] Triggering folder structure rescan. Affected files:",
             response.affected_files.length
           );
-          onFolderStructureChange();
+          onFolderStructureChange(response.affected_files);
         }
 
         // Show success toast if files were affected

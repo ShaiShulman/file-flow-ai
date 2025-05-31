@@ -14,7 +14,7 @@ interface ChatInterfaceProps {
   sessionId: string | null;
   workingDirectory?: string;
   updateAffectedFiles?: (files: string[]) => void;
-  onFolderStructureChange?: () => void;
+  onFolderStructureChange?: (affectedFiles?: string[]) => void;
 }
 
 export default function ChatInterface({
