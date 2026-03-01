@@ -9,7 +9,8 @@ from langgraph.prebuilt import InjectedState
 from utils import truncate_text
 from config import AWS_DEFAULT_REGION, BEDROCK_TEXT_MODEL_ID, DEBUG_LLM
 from categories import categories_manager
-from folder_operations import _get_full_path, get_content
+from folder_operations import _get_full_path
+from content_extractor import get_content, ContentResult
 
 
 # Define prompt templates for each analysis type
@@ -25,7 +26,7 @@ PROMPT_TEMPLATES = {
     {number}. TITLE: Extract the SINGLE most likely title of the document, as literally appearing in the filename or content of the document. If you cannot find a clear title, return "N/A". Surround the result with <title> tag.
     """,
     "date": """
-    {number}. DATE: Return the effective date or signing date of the document. If no clear date can be found, return "N/A". Surround the result with <date> tag.
+    {number}. DATE: Return the effective date or signing date of the document in YYYY-MM-DD format (e.g. 2024-08-21). If only a month and year are available, use the first day of the month (e.g. 2024-09-01). If only a year is available, use January 1st (e.g. 2024-01-01). If no clear date can be found, return "N/A". Surround the result with <date> tag.
     """,
     "subject": """
     {number}. SUBJECT MATTER: Return a short (3-8 words) explanation of the subject matter of the document, which can be used as log line. If there are multiple subject matters, select the most prominent one. Should not include the type of the document or any information that already appear in the returned TITLE. Surround the result with <subject> tag.
@@ -310,6 +311,43 @@ class TextAnalyzer:
 
 
 @tool
+def update_metadata(
+    file_path: str,
+    metadata_updates: Dict[str, Any],
+    state: Annotated[Dict[str, Any], InjectedState] = None,
+) -> Dict[str, Any]:
+    """Update metadata fields for a file. Use this to set or modify metadata like date, category, or custom fields.
+
+    Args:
+        file_path (str): The filename to update metadata for (just the filename, not full path)
+        metadata_updates (Dict[str, Any]): Dictionary of field names and their new values. For example: {"date": "2024-01-15", "category": "Legal Agreements", "confirmed": "true"}
+        state (Annotated[Dict[str, Any], InjectedState]): The current state, injected by LangGraph
+
+    Returns:
+        Dict[str, Any]: Dictionary containing the updated metadata
+    """
+    # Get existing metadata from state
+    existing_metadata = {}
+    if state and "file_metadata" in state and file_path in state["file_metadata"]:
+        existing_metadata = state["file_metadata"][file_path].copy()
+
+    # Merge updates
+    existing_metadata.update(metadata_updates)
+
+    # Update timestamp
+    from datetime import datetime
+    existing_metadata["last_analyzed"] = datetime.now().isoformat()
+
+    metadata_update = {file_path: existing_metadata}
+
+    return {
+        "message": f"Metadata updated for '{file_path}': {metadata_updates}",
+        "file_metadata": metadata_update,
+        "total_tokens": 0,
+    }
+
+
+@tool
 def analyze_document(
     working_directory: str,
     file_path: str,
@@ -319,9 +357,10 @@ def analyze_document(
     subject: bool = False,
     summary: bool = False,
     question: Optional[str] = None,
+    metadata_updates: Optional[Dict[str, Any]] = None,
     state: Annotated[Dict[str, Any], InjectedState] = None,
 ) -> Dict[str, Any]:
-    """Analyze a document using Amazon Bedrock's Titan model.
+    """Analyze a document using Amazon Bedrock's Titan model. Can also update metadata fields directly.
 
     Args:
         working_directory (str): Base directory where operations are performed
@@ -332,31 +371,24 @@ def analyze_document(
         subject (bool): Whether to extract the subject matter from the document
         summary (bool): Whether to create a summary of the document
         question (Optional[str]): A specific question to answer about the document
+        metadata_updates (Optional[Dict[str, Any]]): Dictionary of metadata fields to set directly, e.g. {"date": "2024-01-15", "confirmed": "true"}. These are applied after any analysis results.
         state (Annotated[Dict[str, Any], InjectedState]): The current state of the model, injected by LangGraph
 
     Returns:
         Dict[str, Any]: Dictionary containing analysis results and metadata updates
     """
-    # Get the file content
-    content_result = get_content(working_directory, file_path)
-
-    # Check if there was an error getting the content
-    if content_result.startswith("Path") or content_result.startswith("Error"):
-        return {"message": content_result, "file_metadata": {}}
-
-    # Extract the actual content from the result
-    content = content_result.replace(f"Content of '{file_path}':\n", "", 1)
+    from datetime import datetime
+    total_tokens = 0
 
     # Initialize metadata update with existing data if available
-    from datetime import datetime
-
     existing_metadata = {}
     if state and "file_metadata" in state and file_path in state["file_metadata"]:
         existing_metadata = state["file_metadata"][file_path].copy()
-        print(f"\nRetrieved from state for {file_path}:")
-        for field, value in existing_metadata.items():
-            if field != "last_analyzed":  # Skip timestamp
-                print(f"  - {field}: {value}")
+        if DEBUG_LLM:
+            print(f"\nRetrieved from state for {file_path}:")
+            for field, value in existing_metadata.items():
+                if field != "last_analyzed":
+                    print(f"  - {field}: {value}")
 
     # Determine which fields need to be analyzed
     fields_to_analyze = {
@@ -381,6 +413,17 @@ def analyze_document(
     results = existing_metadata.copy()
 
     if need_analysis:
+        # Get the file content only when analysis is needed
+        content_result = get_content(working_directory, file_path)
+        if content_result.text.startswith("Path") or content_result.text.startswith("Error"):
+            return {"message": content_result.text, "file_metadata": {}}
+        content = content_result.text.replace(f"Content of '{file_path}':\n", "", 1)
+
+        # Track OCR status in metadata
+        if content_result.was_ocr:
+            results["_ocr_scanned"] = True
+            results["_ocr_text"] = content_result.ocr_text
+
         if DEBUG_LLM:
             print(f"\nAnalyzing with model for {file_path}:")
             if fields_to_analyze:
@@ -439,6 +482,10 @@ def analyze_document(
         print(
             f"\nNo analysis needed for {file_path} - all requested fields exist in state"
         )
+
+    # Apply direct metadata updates if provided
+    if metadata_updates:
+        results.update(metadata_updates)
 
     # Always update the last_analyzed timestamp
     results["last_analyzed"] = datetime.now().isoformat()

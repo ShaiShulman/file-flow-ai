@@ -13,6 +13,9 @@ interface SessionContextType {
   clearAffectedFiles: () => void;
   deleteSession: (sessionId: string) => Promise<void>;
   clearSession: () => void;
+  restoreSession: (sessionId: string) => Promise<string>;
+  updateFileChangeTypes: (changeTypes: Record<string, string>) => void;
+  updateAllFileMetadata: (metadata: Record<string, Record<string, any>>) => void;
 }
 
 const SessionContext = createContext<SessionContextType | undefined>(undefined);

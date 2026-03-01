@@ -37,6 +37,8 @@ class AgentRunner:
         self.actions = []
         self.thread_id = str(uuid.uuid4())
         self.agent = graph
+        self.current_status = ""
+        self.is_processing = False
 
         self.memory_config = {
             "configurable": {
@@ -64,6 +66,9 @@ class AgentRunner:
         Returns:
             RunResult: A structured result containing the last AI message, state, and token counts
         """
+        self.is_processing = True
+        self.current_status = "Thinking..."
+
         events = self.agent.stream(
             {
                 "messages": [("user", user_input)],
@@ -86,6 +91,42 @@ class AgentRunner:
 
             # Handle different types of events
             if isinstance(event, dict):
+                # Extract status from latest message for live polling
+                if "messages" in event and event["messages"]:
+                    last_msg = event["messages"][-1]
+                    msg_type = last_msg.__class__.__name__ if hasattr(last_msg, "__class__") else type(last_msg).__name__
+                    if msg_type == "AIMessage" and hasattr(last_msg, "tool_calls") and last_msg.tool_calls:
+                        tool_call = last_msg.tool_calls[-1]
+                        tool_name = tool_call.get("name", "")
+                        tool_args = tool_call.get("args", {})
+                        # Build a human-readable status
+                        if tool_name in ("analyze_document", "analyze_text"):
+                            target = tool_args.get("file_path", tool_args.get("file_name", ""))
+                            target_name = target.split("/")[-1] if target else ""
+                            self.current_status = f"Analyzing {target_name}" if target_name else "Analyzing document..."
+                        elif tool_name == "list_items":
+                            self.current_status = "Scanning directory..."
+                        elif tool_name in ("move_item", "copy_item"):
+                            item = tool_args.get("item_name", "")
+                            self.current_status = f"Moving {item.split('/')[-1]}" if item else "Moving files..."
+                        elif tool_name == "rename_item":
+                            item = tool_args.get("item_name", "")
+                            self.current_status = f"Renaming {item.split('/')[-1]}" if item else "Renaming..."
+                        elif tool_name == "create_item":
+                            item = tool_args.get("item_name", "")
+                            self.current_status = f"Creating {item.split('/')[-1]}" if item else "Creating item..."
+                        elif tool_name == "delete_item":
+                            item = tool_args.get("item_name", "")
+                            self.current_status = f"Deleting {item.split('/')[-1]}" if item else "Deleting..."
+                        elif tool_name == "change_directory":
+                            self.current_status = "Navigating directories..."
+                        else:
+                            self.current_status = f"Running {tool_name}..."
+                    elif msg_type == "ToolMessage":
+                        self.current_status = "Processing results..."
+                    elif msg_type == "AIMessage" and (not hasattr(last_msg, "tool_calls") or not last_msg.tool_calls):
+                        self.current_status = "Composing response..."
+
                 for key, value in event.items():
                     if key == "messages":
                         event_str += "\n  Messages:"
@@ -123,6 +164,9 @@ class AgentRunner:
             event_counter += 1
             last_event = event
 
+        self.is_processing = False
+        self.current_status = ""
+
         if last_event:
             # Update working directory if it changed during execution
             if (
@@ -132,6 +176,7 @@ class AgentRunner:
                 self.working_directory = last_event["working_directory"]
 
             self.affected_files = last_event["affected_files"]
+            self.file_metadata = last_event.get("file_metadata", self.file_metadata)
             self.analysis_tokens = last_event["analysis_tokens"]
             self.instruction_tokens = instruction_tokens
 

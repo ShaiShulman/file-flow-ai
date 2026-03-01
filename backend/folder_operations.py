@@ -22,12 +22,23 @@ def _get_full_path(working_directory: str, folder_path: Optional[str] = None) ->
 
     Returns:
         str: Full path
+
+    Raises:
+        ValueError: If the resolved path escapes the working directory (when external dirs disabled)
     """
-    return (
-        os.path.join(working_directory, folder_path)
-        if folder_path
-        else working_directory
-    )
+    if not folder_path:
+        return working_directory
+
+    full_path = os.path.normpath(os.path.join(working_directory, folder_path))
+
+    # Prevent path traversal outside the working directory
+    if not ALLOW_EXTERNAL_DIRECTORIES:
+        real_working = os.path.realpath(working_directory)
+        real_full = os.path.realpath(full_path)
+        if not real_full.startswith(real_working + os.sep) and real_full != real_working:
+            raise ValueError(f"Path '{folder_path}' escapes the working directory")
+
+    return full_path
 
 
 @tool
@@ -118,6 +129,7 @@ def copy_item(
         return {
             "message": f"Source path '{source_path}' does not exist",
             "affected_files": [],
+            "action": None,
         }
 
     is_file = os.path.isfile(source_full_path)
@@ -126,6 +138,7 @@ def copy_item(
         return {
             "message": f"Destination path '{dest_path}' already exists",
             "affected_files": [],
+            "action": None,
         }
 
     if is_file:
@@ -133,7 +146,7 @@ def copy_item(
         shutil.copy2(source_full_path, dest_full_path)
         affected_files.extend([source_full_path, dest_full_path])
         action = ActionInfo(
-            action_type=ActionType.MOVE_FILE if is_file else ActionType.MOVE_FOLDER,
+            action_type=ActionType.COPY_FILE,
             item_name=os.path.basename(source_path),
             source_path=source_full_path,
             target_path=dest_full_path,
@@ -147,7 +160,7 @@ def copy_item(
         shutil.copytree(source_full_path, dest_full_path)
         affected_files.extend([source_full_path, dest_full_path])
         action = ActionInfo(
-            action_type=ActionType.MOVE_FILE if is_file else ActionType.MOVE_FOLDER,
+            action_type=ActionType.COPY_FOLDER,
             item_name=os.path.basename(source_path),
             source_path=source_full_path,
             target_path=dest_full_path,

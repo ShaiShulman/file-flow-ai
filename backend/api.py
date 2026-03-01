@@ -1,5 +1,7 @@
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+import asyncio
 import uuid
 import os
 from typing import Dict, Any, List, Optional
@@ -7,6 +9,7 @@ from typing import Dict, Any, List, Optional
 from api_server import AgentAPI, UserInput, AgentResponse
 from categories import categories_manager
 from path_utils import get_session_working_directory
+from database import db
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -70,12 +73,9 @@ async def create_session(
     """
     if session_id is None:
         session_id = str(uuid.uuid4())
-    else:
-        # Check if session already exists
-        if session_id in agent_api.sessions:
-            raise HTTPException(
-                status_code=409, detail=f"Session {session_id} already exists"
-            )
+    elif session_id in agent_api.sessions:
+        # Session already exists, return it (idempotent)
+        return {"session_id": session_id}
 
     # Use the session-specific working directory
     session_working_directory = get_session_working_directory(session_id)
@@ -97,11 +97,9 @@ async def create_session_with_id(
     Returns:
         Dict[str, str]: Dictionary containing the session ID
     """
-    # Check if session already exists
+    # If session already exists, return it (idempotent create)
     if session_id in agent_api.sessions:
-        raise HTTPException(
-            status_code=409, detail=f"Session {session_id} already exists"
-        )
+        return {"session_id": session_id}
 
     # Use the session-specific working directory
     session_working_directory = get_session_working_directory(session_id)
@@ -125,7 +123,10 @@ async def run_agent(session_id: str, user_input: UserInput):
         # Get the working directory based on the session ID
         working_directory = get_session_working_directory(session_id)
 
-        result = agent_api.run_agent(session_id, user_input.message, working_directory)
+        # Run in thread so status polling endpoint remains responsive
+        result = await asyncio.to_thread(
+            agent_api.run_agent, session_id, user_input.message, working_directory
+        )
 
         # Update the agent's token counts in the response
         agent = agent_api.sessions[session_id]
@@ -134,6 +135,8 @@ async def run_agent(session_id: str, user_input: UserInput):
 
         return result
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -258,3 +261,165 @@ async def reset_categories(categories: Dict[str, List[str]]):
         raise HTTPException(
             status_code=500, detail=f"Failed to reset categories: {str(e)}"
         )
+
+
+# ── Agent Status endpoint ──
+
+
+@app.get("/sessions/{session_id}/status")
+async def get_session_status(session_id: str):
+    """Get current agent processing status for live polling."""
+    if session_id not in agent_api.sessions:
+        return {"status": "idle", "current_action": ""}
+
+    agent = agent_api.sessions[session_id]
+    if agent.is_processing:
+        return {"status": "processing", "current_action": agent.current_status}
+    return {"status": "idle", "current_action": ""}
+
+
+# ── Action History endpoints ──
+
+
+@app.get("/sessions/{session_id}/actions")
+async def get_actions(session_id: str):
+    """Get action history for a session."""
+    actions = db.get_actions(session_id)
+    return {"actions": actions}
+
+
+@app.post("/sessions/{session_id}/actions/{action_id}/revert")
+async def revert_action_endpoint(session_id: str, action_id: int):
+    """Revert a specific action."""
+    from revert import revert_action
+
+    action = db.get_action(action_id)
+    if not action:
+        raise HTTPException(status_code=404, detail="Action not found")
+    if action["session_id"] != session_id:
+        raise HTTPException(status_code=400, detail="Action does not belong to this session")
+    if action["reverted"]:
+        raise HTTPException(status_code=400, detail="Action already reverted")
+    if not action["revertable"]:
+        raise HTTPException(status_code=400, detail="Action cannot be reverted")
+
+    result = revert_action(action)
+    if result["success"]:
+        db.mark_action_reverted(action_id)
+    return result
+
+
+# ── File Metadata endpoints ──
+
+
+class MetadataFieldInput(BaseModel):
+    name: str
+    type: str = "text"
+
+
+@app.get("/sessions/{session_id}/metadata/{file_path:path}")
+async def get_file_metadata(session_id: str, file_path: str):
+    """Get metadata for a specific file."""
+    metadata = db.get_file_metadata(session_id, file_path)
+    return {"file_path": file_path, "metadata": metadata or {}}
+
+
+@app.put("/sessions/{session_id}/metadata/{file_path:path}")
+async def update_file_metadata(session_id: str, file_path: str, metadata: Dict[str, Any]):
+    """Update metadata for a specific file."""
+    db.save_file_metadata(session_id, file_path, metadata)
+    return {"status": "success", "file_path": file_path}
+
+
+@app.get("/sessions/{session_id}/metadata-fields")
+async def get_metadata_fields(session_id: str):
+    """Get metadata field definitions for a session."""
+    fields = db.get_metadata_fields(session_id)
+    return {"fields": fields}
+
+
+@app.post("/sessions/{session_id}/metadata-fields")
+async def add_metadata_field(session_id: str, field: MetadataFieldInput):
+    """Add a new metadata field definition."""
+    db.add_metadata_field(session_id, field.name, field.type)
+    return {"status": "success"}
+
+
+@app.delete("/sessions/{session_id}/metadata-fields/{field_name}")
+async def delete_metadata_field(session_id: str, field_name: str):
+    """Delete a metadata field definition."""
+    db.delete_metadata_field(session_id, field_name)
+    return {"status": "success"}
+
+
+# ── Analytics endpoints ──
+
+
+@app.get("/sessions/{session_id}/stats")
+async def get_session_stats(session_id: str):
+    """Get aggregated session statistics."""
+    return db.get_session_stats(session_id)
+
+
+# ── Session detail endpoint ──
+
+
+@app.get("/sessions/{session_id}/detail")
+async def get_session_detail(session_id: str):
+    """Get session details from database."""
+    session = db.get_session(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail=f"Session {session_id} not found")
+    return session
+
+
+# ── Messages endpoint ──
+
+
+@app.get("/sessions/{session_id}/messages")
+async def get_session_messages(session_id: str):
+    """Get message history for a session."""
+    messages = db.get_messages(session_id)
+    return {"messages": messages}
+
+
+# ── Script Export endpoints ──
+
+
+class ExportScriptRequest(BaseModel):
+    base_path: str
+    format: str = "powershell"
+
+
+@app.post("/sessions/{session_id}/export-script")
+async def export_script(session_id: str, request: ExportScriptRequest):
+    """Generate a batch or PowerShell script from action history."""
+    from script_export import ScriptExporter
+
+    actions = db.get_actions(session_id)
+    session = db.get_session(session_id)
+    working_dir = session["working_directory"] if session else ""
+
+    exporter = ScriptExporter(actions, request.base_path, working_dir)
+    if request.format == "batch":
+        script = exporter.generate_batch()
+        filename = "organize.bat"
+    else:
+        script = exporter.generate_powershell()
+        filename = "organize.ps1"
+    return {"script": script, "filename": filename}
+
+
+@app.get("/sessions/{session_id}/manifest")
+async def get_manifest(session_id: str):
+    """Generate a JSON manifest of all actions and metadata."""
+    from script_export import ScriptExporter
+
+    actions = db.get_actions(session_id)
+    metadata = db.get_all_file_metadata(session_id)
+    categories = db.get_categories()
+    session = db.get_session(session_id)
+    working_dir = session["working_directory"] if session else ""
+
+    exporter = ScriptExporter(actions, "", working_dir)
+    return exporter.generate_manifest(metadata, categories)

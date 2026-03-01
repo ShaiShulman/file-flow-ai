@@ -40,3 +40,7 @@ frontend/.next/
 node_modules
 
 uploads
+backend/fileflow.db
+backend/fileflow.db-shm
+backend/fileflow.db-wal
+screenshots

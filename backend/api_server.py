@@ -6,6 +6,7 @@ import os
 
 from agent_runner import AgentRunner, RunResult
 from action_types import ActionInfo
+from database import db
 
 
 class UserInput(BaseModel):
@@ -13,6 +14,15 @@ class UserInput(BaseModel):
 
     message: str
     working_directory: Optional[str] = None
+
+
+class MessageStats(BaseModel):
+    """Token and cost stats for a single agent response."""
+
+    input_tokens: int = 0
+    output_tokens: int = 0
+    cost_usd: float = 0.0
+    duration_ms: int = 0
 
 
 class AgentResponse(BaseModel):
@@ -26,6 +36,7 @@ class AgentResponse(BaseModel):
     actions: List[Dict[str, Any]]
     file_metadata: Dict[str, Any]
     categories: Dict[str, Any]
+    message_stats: Optional[MessageStats] = None
 
 
 class AgentAPI:
@@ -66,6 +77,8 @@ class AgentAPI:
             self.sessions[session_id] = AgentRunner(
                 working_directory=wd, debug=self.debug
             )
+            # Persist session to database
+            db.create_session(session_id, wd)
         elif working_directory:
             # Always update working directory if provided (to ensure session-specific directory is used)
             self.sessions[session_id].working_directory = working_directory
@@ -90,12 +103,70 @@ class AgentAPI:
         # Store the intended working directory before running
         intended_working_directory = working_directory or agent.working_directory
 
+        # Persist user message
+        db.save_message(session_id, "user", user_input)
+
         result = agent.run(user_input)
 
         # Ensure the working directory is always set to the session-specific directory
         # This prevents the agent from permanently changing away from the session directory
         if working_directory:
             agent.working_directory = working_directory
+
+        # Collect LLM call stats
+        from llm import TimedBedrock
+        from config import calculate_cost
+        llm_stats = TimedBedrock.drain_stats()
+
+        total_input = sum(s.get("input_tokens", 0) for s in llm_stats)
+        total_output = sum(s.get("output_tokens", 0) for s in llm_stats)
+        total_duration = sum(s.get("duration_ms", 0) for s in llm_stats)
+        total_cost = sum(
+            calculate_cost(s.get("model_id", ""), s.get("input_tokens", 0), s.get("output_tokens", 0))
+            for s in llm_stats
+        )
+
+        message_stats = MessageStats(
+            input_tokens=total_input,
+            output_tokens=total_output,
+            cost_usd=total_cost,
+            duration_ms=total_duration,
+        )
+
+        # Persist assistant message with stats
+        db.save_message(
+            session_id, "assistant", result.result_message or "",
+            input_tokens=total_input,
+            output_tokens=total_output,
+            cost_usd=total_cost,
+            duration_ms=total_duration,
+        )
+
+        # Persist actions
+        for action in result.actions:
+            action_dict = action.to_dict()
+            db.save_action(
+                session_id,
+                action_dict["action_type"],
+                action_dict["item_name"],
+                source_path=action_dict.get("source_path"),
+                target_path=action_dict.get("target_path"),
+                new_name=action_dict.get("new_name"),
+                description=action_dict.get("description", ""),
+            )
+
+            # When a file is renamed, re-key its metadata in the database
+            if action_dict["action_type"] in ("rename_file", "rename_folder") and action_dict.get("new_name"):
+                old_meta = db.get_file_metadata(session_id, action_dict["item_name"])
+                if old_meta:
+                    db.save_file_metadata(session_id, action_dict["new_name"], old_meta)
+                    db.delete_file_metadata(session_id, action_dict["item_name"])
+
+        # Persist file metadata updates
+        if agent.file_metadata:
+            for file_path, metadata in agent.file_metadata.items():
+                if isinstance(metadata, dict):
+                    db.save_file_metadata(session_id, file_path, metadata)
 
         return AgentResponse(
             message=result.result_message,
@@ -106,6 +177,7 @@ class AgentAPI:
             actions=[action.to_dict() for action in result.actions],
             file_metadata=agent.file_metadata,
             categories=result.state.get("categories", {}),
+            message_stats=message_stats,
         )
 
     def delete_session(self, session_id: str) -> bool:
@@ -119,5 +191,6 @@ class AgentAPI:
         """
         if session_id in self.sessions:
             del self.sessions[session_id]
+            db.delete_session(session_id)
             return True
         return False

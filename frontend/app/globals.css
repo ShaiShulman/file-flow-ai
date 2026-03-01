@@ -92,3 +92,12 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+@keyframes pulse-highlight {
+  0%, 100% { box-shadow: inset 3px 0 0 transparent; }
+  50% { box-shadow: inset 3px 0 0 #3b82f6; }
+}
+
+.animate-pulse-highlight {
+  animation: pulse-highlight 1.5s ease-in-out 3;
+}

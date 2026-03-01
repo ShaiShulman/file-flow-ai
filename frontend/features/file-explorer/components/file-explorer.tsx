@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from "react";
 import type { FileType, FolderType } from "@/lib/types";
-import { sampleData } from "../data";
 import FolderItem from "./folder-item";
-import { Upload, Folder, FileText } from "lucide-react";
+import FileItem from "./file-item";
+import { Upload } from "lucide-react";
 import { useSessionContext } from "@/features/session/context";
 
 // Sample data constant for empty state
@@ -20,18 +20,8 @@ const SAMPLE_DATA: FolderType = {
       type: "folder",
       path: "/Folder 1",
       children: [
-        {
-          id: "sample-file1",
-          name: "document.pdf",
-          type: "file",
-          path: "/Folder 1/document.pdf",
-        },
-        {
-          id: "sample-file2",
-          name: "notes.txt",
-          type: "file",
-          path: "/Folder 1/notes.txt",
-        },
+        { id: "sample-file1", name: "document.pdf", type: "file", path: "/Folder 1/document.pdf" },
+        { id: "sample-file2", name: "notes.txt", type: "file", path: "/Folder 1/notes.txt" },
       ],
     },
     {
@@ -46,34 +36,14 @@ const SAMPLE_DATA: FolderType = {
           type: "folder",
           path: "/Folder 2/subfolder",
           children: [
-            {
-              id: "sample-nested-file",
-              name: "nested.txt",
-              type: "file",
-              path: "/Folder 2/subfolder/nested.txt",
-            },
+            { id: "sample-nested-file", name: "nested.txt", type: "file", path: "/Folder 2/subfolder/nested.txt" },
           ],
         },
-        {
-          id: "sample-file3",
-          name: "data.json",
-          type: "file",
-          path: "/Folder 2/data.json",
-        },
+        { id: "sample-file3", name: "data.json", type: "file", path: "/Folder 2/data.json" },
       ],
     },
-    {
-      id: "sample-file4",
-      name: "readme.md",
-      type: "file",
-      path: "/readme.md",
-    },
-    {
-      id: "sample-file5",
-      name: "config.yml",
-      type: "file",
-      path: "/config.yml",
-    },
+    { id: "sample-file4", name: "readme.md", type: "file", path: "/readme.md" },
+    { id: "sample-file5", name: "config.yml", type: "file", path: "/config.yml" },
   ],
 };
 
@@ -81,20 +51,17 @@ interface FileExplorerProps {
   onFileSelect: (file: FileType) => void;
   initialData?: FolderType;
   currentFolder?: FolderType;
+  fileChangeTypes?: Record<string, string>;
+  allFileMetadata?: Record<string, Record<string, any>>;
 }
 
 export default function FileExplorer({
   onFileSelect,
   initialData,
   currentFolder,
+  fileChangeTypes = {},
+  allFileMetadata = {},
 }: FileExplorerProps) {
-  console.log("[FILE-EXPLORER] Component rendered. Props:", {
-    hasInitialData: !!initialData,
-    hasCurrentFolder: !!currentFolder,
-    currentFolderId: currentFolder?.id,
-    currentFolderChildrenCount: currentFolder?.children?.length,
-  });
-
   const [fileSystem, setFileSystem] = useState<FolderType | null>(
     initialData || null
   );
@@ -108,6 +75,7 @@ export default function FileExplorer({
   // Get affected files from session context
   const { sessionState } = useSessionContext();
   const affectedFiles = sessionState.affectedFiles;
+  const recentlyAffectedFiles = sessionState.recentlyAffectedFiles;
 
   // Expanded folders for sample data (show all expanded)
   const sampleExpandedFolders = new Set([
@@ -119,50 +87,27 @@ export default function FileExplorer({
 
   // Update file system when initialData or currentFolder changes
   useEffect(() => {
-    console.log("[FILE-EXPLORER] useEffect triggered. Checking for updates...");
-    console.log(
-      "[FILE-EXPLORER] currentFolder:",
-      currentFolder?.id,
-      "children:",
-      currentFolder?.children?.length
-    );
-    console.log(
-      "[FILE-EXPLORER] initialData:",
-      initialData?.id,
-      "children:",
-      initialData?.children?.length
-    );
-
     if (currentFolder) {
-      console.log(
-        "[FILE-EXPLORER] Updating fileSystem with currentFolder:",
-        currentFolder.id
-      );
       setFileSystem(currentFolder);
-      setExpandedFolders(new Set([currentFolder.id]));
-      console.log(
-        "[FILE-EXPLORER] fileSystem state updated with currentFolder"
-      );
+      // Auto-expand all top-level folders
+      const topLevelFolderIds = currentFolder.children
+        .filter((c) => c.type === "folder")
+        .map((c) => c.id);
+      setExpandedFolders(new Set([currentFolder.id, ...topLevelFolderIds]));
     } else if (initialData) {
-      console.log(
-        "[FILE-EXPLORER] Updating fileSystem with initialData:",
-        initialData.id
-      );
       setFileSystem(initialData);
-      setExpandedFolders(new Set([initialData.id]));
-      console.log("[FILE-EXPLORER] fileSystem state updated with initialData");
-    } else {
-      console.log("[FILE-EXPLORER] No folder data available");
+      const topLevelFolderIds = initialData.children
+        .filter((c) => c.type === "folder")
+        .map((c) => c.id);
+      setExpandedFolders(new Set([initialData.id, ...topLevelFolderIds]));
     }
   }, [initialData, currentFolder]);
 
-  // Function to handle file selection
   const handleSelectFile = (file: FileType) => {
     setSelectedFile(file);
     onFileSelect(file);
   };
 
-  // Function to toggle folder expansion
   const toggleFolder = (folderId: string) => {
     setExpandedFolders((prev) => {
       const newSet = new Set(prev);
@@ -175,15 +120,23 @@ export default function FileExplorer({
     });
   };
 
-  // Dummy handlers for sample data (do nothing)
   const dummyToggleFolder = () => {};
   const dummySelectFile = () => {};
 
+  // Helper to get change type for a file
+  const getChangeType = (name: string, path?: string): string | undefined => {
+    if (path && fileChangeTypes[path]) return fileChangeTypes[path];
+    if (fileChangeTypes[name]) return fileChangeTypes[name];
+    for (const [key, value] of Object.entries(fileChangeTypes)) {
+      const keyName = key.split("/").pop() || key;
+      if (keyName === name) return value;
+    }
+    return undefined;
+  };
+
   if (!fileSystem) {
-    console.log("[FILE-EXPLORER] Rendering empty state (no fileSystem)");
     return (
       <div className="h-full overflow-hidden relative">
-        {/* Centered overlay message - not affected by grayscale */}
         <div className="absolute inset-0 flex items-center justify-center z-10">
           <div className="p-4 border border-slate-300 rounded-md bg-white shadow-md">
             <div className="flex items-center gap-2">
@@ -193,53 +146,67 @@ export default function FileExplorer({
           </div>
         </div>
 
-        {/* Greyed out content */}
         <div className="h-full opacity-50 filter grayscale">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold">File Structure</h2>
-          </div>
-
-          {/* Sample tree structure using FolderItem component */}
           <div className="opacity-30 pointer-events-none filter grayscale">
-            <div className="space-y-1">
-              <FolderItem
-                folder={SAMPLE_DATA}
-                depth={0}
-                expandedFolders={sampleExpandedFolders}
-                selectedFile={undefined}
-                onToggleFolder={dummyToggleFolder}
-                onSelectFile={dummySelectFile}
-              />
-            </div>
+            <FolderItem
+              folder={SAMPLE_DATA}
+              depth={0}
+              expandedFolders={sampleExpandedFolders}
+              selectedFile={undefined}
+              onToggleFolder={dummyToggleFolder}
+              onSelectFile={dummySelectFile}
+            />
           </div>
         </div>
       </div>
     );
   }
 
-  console.log("[FILE-EXPLORER] Rendering file tree. FileSystem:", {
-    id: fileSystem.id,
-    name: fileSystem.name,
-    childrenCount: fileSystem.children.length,
-    expandedFoldersCount: expandedFolders.size,
-  });
-
+  // Render children directly (skip root folder)
   return (
     <div className="h-full overflow-auto">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-semibold">File Structure</h2>
-      </div>
+      {fileSystem.children.map((child) => {
+        if (child.type === "folder") {
+          return (
+            <FolderItem
+              key={child.id}
+              folder={child}
+              depth={0}
+              expandedFolders={expandedFolders}
+              selectedFile={selectedFile}
+              onToggleFolder={toggleFolder}
+              onSelectFile={handleSelectFile}
+              fileChangeTypes={fileChangeTypes}
+              allFileMetadata={allFileMetadata}
+            />
+          );
+        } else {
+          const isAffected = affectedFiles.some((p) => {
+            const affectedName = p.split("/").pop() || p;
+            return affectedName === child.name || p === child.name || (child.path && p === child.path);
+          });
+          const changeType = getChangeType(child.name, child.path);
+          const fileMeta = allFileMetadata[child.path] || allFileMetadata[child.name];
+          const isRecentlyAffected = recentlyAffectedFiles.some((p) => {
+            const recentName = p.split("/").pop() || p;
+            return recentName === child.name || p === child.name || (child.path && p === child.path);
+          });
 
-      <div className="space-y-1">
-        <FolderItem
-          folder={fileSystem}
-          depth={0}
-          expandedFolders={expandedFolders}
-          selectedFile={selectedFile}
-          onToggleFolder={toggleFolder}
-          onSelectFile={handleSelectFile}
-        />
-      </div>
+          return (
+            <FileItem
+              key={child.id}
+              file={child}
+              isSelected={selectedFile?.id === child.id}
+              paddingLeft={8}
+              onSelect={handleSelectFile}
+              isAffected={isAffected}
+              changeType={changeType}
+              fileMetadata={fileMeta}
+              isRecentlyAffected={isRecentlyAffected}
+            />
+          );
+        }
+      })}
     </div>
   );
 }

@@ -12,6 +12,7 @@ from folder_operations import (
     copy_item,
     move_item,
     change_directory,
+    rename_item,
 )
 
 from category_tools import (
@@ -25,6 +26,7 @@ from category_tools import (
 
 from text_analysis import (
     analyze_document,
+    update_metadata,
 )
 
 from action_types import ActionInfo, ActionType
@@ -40,6 +42,7 @@ safe_tools = [
     list_categories,
     get_category,
     analyze_document,
+    update_metadata,
 ]
 
 # Sensitive tools are operations that modify the file system
@@ -48,6 +51,7 @@ sensitive_tools = [
     move_item,
     copy_item,
     create_item,
+    rename_item,
 ]
 
 # Create a set of sensitive tool names for quick lookup
@@ -176,7 +180,23 @@ def extract_tool_result(state) -> dict:
         if "action" in content_dict and content_dict["action"] is not None:
             if "actions" not in result:
                 result["actions"] = []
-            result["actions"].append(ActionInfo.from_dict(content_dict["action"]))
+            action_info = ActionInfo.from_dict(content_dict["action"])
+            result["actions"].append(action_info)
+
+            # When a file is renamed, re-key its metadata under the new name
+            if action_info.action_type in (ActionType.RENAME_FILE, ActionType.RENAME_FOLDER) and action_info.new_name:
+                old_name = action_info.item_name
+                new_name = action_info.new_name
+                # Check both the accumulated result metadata and the existing state metadata
+                state_metadata = state.get("file_metadata", {})
+                result_metadata = result.get("file_metadata", {})
+                old_meta = result_metadata.get(old_name) or state_metadata.get(old_name)
+                if old_meta:
+                    if "file_metadata" not in result:
+                        result["file_metadata"] = {}
+                    result["file_metadata"][new_name] = old_meta
+                    # Remove the old key from result if it was there
+                    result["file_metadata"].pop(old_name, None)
 
     return result
 

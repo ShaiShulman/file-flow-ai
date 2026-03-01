@@ -253,9 +253,10 @@ export async function getFolderStructure(folderId: string) {
   }
 }
 
-// Re-zip and download folder structure
+// Re-zip and download folder structure, optionally including a manifest
 export async function downloadFolderAsZip(
-  folderId: string
+  folderId: string,
+  sessionId?: string | null
 ): Promise<Uint8Array> {
   try {
     await ensureUploadDir();
@@ -263,7 +264,7 @@ export async function downloadFolderAsZip(
     // Get the folder path directly
     const folderName = `extracted_${folderId}`;
     const folderPath = path.join(UPLOAD_BASE_PATH, folderName);
-    console.log("folderPath", folderPath);
+
     // Check if folder exists
     try {
       await fs.access(folderPath);
@@ -282,19 +283,16 @@ export async function downloadFolderAsZip(
         const fullPath = path.join(dirPath, entry.name);
 
         if (entry.isDirectory()) {
-          // Create folder in ZIP and recursively add its contents
           const subFolder = zipFolder.folder(entry.name);
           if (subFolder) {
             await addDirectoryToZip(fullPath, subFolder);
           }
         } else {
-          // Add file to ZIP
           try {
             const fileContent = await fs.readFile(fullPath);
             zipFolder.file(entry.name, fileContent);
           } catch (error) {
             console.error(`Failed to read file ${fullPath}:`, error);
-            // Skip file if it can't be read
           }
         }
       }
@@ -302,6 +300,20 @@ export async function downloadFolderAsZip(
 
     // Add all contents of the extracted folder to the ZIP
     await addDirectoryToZip(folderPath, zip);
+
+    // Fetch and include manifest.json if a session exists
+    if (sessionId) {
+      try {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+        const res = await fetch(`${apiUrl}/sessions/${sessionId}/manifest`);
+        if (res.ok) {
+          const manifest = await res.json();
+          zip.file("manifest.json", JSON.stringify(manifest, null, 2));
+        }
+      } catch (error) {
+        console.error("Failed to fetch manifest for ZIP:", error);
+      }
+    }
 
     // Generate the ZIP file
     const zipContent = await zip.generateAsync({

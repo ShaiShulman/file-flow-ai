@@ -8,6 +8,8 @@ class ActionType(Enum):
 
     MOVE_FILE = "move_file"
     MOVE_FOLDER = "move_folder"
+    COPY_FILE = "copy_file"
+    COPY_FOLDER = "copy_folder"
     RENAME_FILE = "rename_file"
     RENAME_FOLDER = "rename_folder"
     CREATE_FILE = "create_file"
@@ -27,6 +29,9 @@ class ActionInfo:
     target_path: Optional[str] = None
     new_name: Optional[str] = None
     description: str = ""
+    id: Optional[int] = None
+    reverted: bool = False
+    created_at: Optional[str] = None
 
     def __post_init__(self):
         """Generate a description if none was provided."""
@@ -35,6 +40,10 @@ class ActionInfo:
                 self.description = f"Moved file '{self.item_name}' from '{self.source_path}' to '{self.target_path}'"
             elif self.action_type == ActionType.MOVE_FOLDER:
                 self.description = f"Moved folder '{self.item_name}' from '{self.source_path}' to '{self.target_path}'"
+            elif self.action_type == ActionType.COPY_FILE:
+                self.description = f"Copied file '{self.item_name}' from '{self.source_path}' to '{self.target_path}'"
+            elif self.action_type == ActionType.COPY_FOLDER:
+                self.description = f"Copied folder '{self.item_name}' from '{self.source_path}' to '{self.target_path}'"
             elif self.action_type == ActionType.RENAME_FILE:
                 self.description = (
                     f"Renamed file from '{self.item_name}' to '{self.new_name}'"
@@ -64,6 +73,19 @@ class ActionInfo:
                     f"Modified file '{self.item_name}' in '{self.source_path}'"
                 )
 
+    @property
+    def revertable(self) -> bool:
+        """Check if this action can be reverted."""
+        if self.reverted:
+            return False
+        revertable_types = {
+            ActionType.MOVE_FILE, ActionType.MOVE_FOLDER,
+            ActionType.COPY_FILE, ActionType.COPY_FOLDER,
+            ActionType.RENAME_FILE, ActionType.RENAME_FOLDER,
+            ActionType.CREATE_FILE, ActionType.CREATE_FOLDER,
+        }
+        return self.action_type in revertable_types
+
     def to_dict(self) -> dict:
         """Convert the ActionInfo to a dictionary for JSON serialization."""
         return {
@@ -73,6 +95,10 @@ class ActionInfo:
             "target_path": self.target_path,
             "new_name": self.new_name,
             "description": self.description,
+            "id": self.id,
+            "reverted": self.reverted,
+            "revertable": self.revertable,
+            "created_at": self.created_at,
         }
 
     @classmethod
@@ -92,4 +118,7 @@ class ActionInfo:
             target_path=data.get("target_path"),
             new_name=data.get("new_name"),
             description=data.get("description", ""),
+            id=data.get("id"),
+            reverted=data.get("reverted", False),
+            created_at=data.get("created_at"),
         )

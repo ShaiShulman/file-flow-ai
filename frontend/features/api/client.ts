@@ -5,6 +5,13 @@ export interface UserInput {
   working_directory?: string;
 }
 
+export interface MessageStats {
+  input_tokens: number;
+  output_tokens: number;
+  cost_usd: number;
+  duration_ms: number;
+}
+
 export interface AgentResponse {
   message?: string;
   working_directory: string;
@@ -14,6 +21,7 @@ export interface AgentResponse {
   actions: Array<Record<string, any>>;
   file_metadata: Record<string, any>;
   categories: Record<string, any>;
+  message_stats?: MessageStats;
 }
 
 export interface TokenStats {
@@ -91,6 +99,22 @@ export class ApiClient {
     return this.request<string[]>("/sessions");
   }
 
+  async getSessionDetail(
+    sessionId: string
+  ): Promise<{ id: string; working_directory: string; created_at: string; status: string }> {
+    return this.request<{ id: string; working_directory: string; created_at: string; status: string }>(
+      `/sessions/${sessionId}/detail`
+    );
+  }
+
+  async getSessionStatus(
+    sessionId: string
+  ): Promise<{ status: string; current_action: string }> {
+    return this.request<{ status: string; current_action: string }>(
+      `/sessions/${sessionId}/status`
+    );
+  }
+
   // Agent interaction
   async runAgent(
     sessionId: string,
@@ -160,6 +184,114 @@ export class ApiClient {
   // Health check
   async healthCheck(): Promise<{ status: string; message: string }> {
     return this.request<{ status: string; message: string }>("/");
+  }
+
+  // Action history
+  async getActions(
+    sessionId: string
+  ): Promise<{ actions: Array<Record<string, any>> }> {
+    return this.request<{ actions: Array<Record<string, any>> }>(
+      `/sessions/${sessionId}/actions`
+    );
+  }
+
+  async revertAction(
+    sessionId: string,
+    actionId: number
+  ): Promise<{ success: boolean; message: string }> {
+    return this.request<{ success: boolean; message: string }>(
+      `/sessions/${sessionId}/actions/${actionId}/revert`,
+      { method: "POST" }
+    );
+  }
+
+  // File metadata
+  async getFileMetadata(
+    sessionId: string,
+    filePath: string
+  ): Promise<{ file_path: string; metadata: Record<string, any> }> {
+    return this.request<{ file_path: string; metadata: Record<string, any> }>(
+      `/sessions/${sessionId}/metadata/${encodeURIComponent(filePath)}`
+    );
+  }
+
+  async updateFileMetadata(
+    sessionId: string,
+    filePath: string,
+    metadata: Record<string, any>
+  ): Promise<{ status: string }> {
+    return this.request<{ status: string }>(
+      `/sessions/${sessionId}/metadata/${encodeURIComponent(filePath)}`,
+      { method: "PUT", body: JSON.stringify(metadata) }
+    );
+  }
+
+  // Metadata field definitions
+  async getMetadataFields(
+    sessionId: string
+  ): Promise<{ fields: Array<{ field_name: string; field_type: string }> }> {
+    return this.request<{
+      fields: Array<{ field_name: string; field_type: string }>;
+    }>(`/sessions/${sessionId}/metadata-fields`);
+  }
+
+  async addMetadataField(
+    sessionId: string,
+    name: string,
+    type: string = "text"
+  ): Promise<{ status: string }> {
+    return this.request<{ status: string }>(
+      `/sessions/${sessionId}/metadata-fields`,
+      { method: "POST", body: JSON.stringify({ name, type }) }
+    );
+  }
+
+  async deleteMetadataField(
+    sessionId: string,
+    fieldName: string
+  ): Promise<{ status: string }> {
+    return this.request<{ status: string }>(
+      `/sessions/${sessionId}/metadata-fields/${encodeURIComponent(fieldName)}`,
+      { method: "DELETE" }
+    );
+  }
+
+  // Session stats / analytics
+  async getSessionStats(sessionId: string): Promise<Record<string, any>> {
+    return this.request<Record<string, any>>(
+      `/sessions/${sessionId}/stats`
+    );
+  }
+
+  // Session messages
+  async getSessionMessages(
+    sessionId: string
+  ): Promise<{ messages: Array<Record<string, any>> }> {
+    return this.request<{ messages: Array<Record<string, any>> }>(
+      `/sessions/${sessionId}/messages`
+    );
+  }
+
+  // Script export
+  async exportScript(
+    sessionId: string,
+    basePath: string,
+    format: string = "powershell"
+  ): Promise<{ script: string; filename: string }> {
+    return this.request<{ script: string; filename: string }>(
+      `/sessions/${sessionId}/export-script`,
+      {
+        method: "POST",
+        body: JSON.stringify({ base_path: basePath, format }),
+      }
+    );
+  }
+
+  // Manifest
+  async getManifest(sessionId: string): Promise<Record<string, any>> {
+    return this.request<Record<string, any>>(
+      `/sessions/${sessionId}/manifest`
+    );
   }
 }
 

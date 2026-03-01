@@ -20,11 +20,18 @@ export interface ChatMessage {
     file_metadata?: Record<string, any>;
     categories?: Record<string, any>;
   };
+  stats?: {
+    input_tokens: number;
+    output_tokens: number;
+    cost_usd: number;
+    duration_ms: number;
+  };
 }
 
 export interface ChatState {
   messages: ChatMessage[];
   isProcessing: boolean;
+  currentAction: string;
   error: string | null;
   totalTokens: number;
 }
@@ -32,16 +39,19 @@ export interface ChatState {
 export function useChat(
   sessionId: string | null,
   updateAffectedFiles?: (files: string[]) => void,
-  onFolderStructureChange?: (affectedFiles?: string[]) => void
+  onFolderStructureChange?: (affectedFiles?: string[]) => void,
+  onResponseData?: (data: { actions: Array<Record<string, any>>; file_metadata: Record<string, any> }) => void
 ) {
   const [chatState, setChatState] = useState<ChatState>({
     messages: [],
     isProcessing: false,
+    currentAction: "",
     error: null,
     totalTokens: 0,
   });
   const { toast } = useToast();
   const abortControllerRef = useRef<AbortController | null>(null);
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const sendMessage = useCallback(
     async (message: string, workingDirectory?: string) => {
@@ -74,6 +84,21 @@ export function useChat(
       // Create abort controller for this request
       abortControllerRef.current = new AbortController();
 
+      // Start polling for agent status
+      pollingRef.current = setInterval(async () => {
+        try {
+          const status = await apiClient.getSessionStatus(sessionId);
+          if (status.current_action) {
+            setChatState((prev) => ({
+              ...prev,
+              currentAction: status.current_action,
+            }));
+          }
+        } catch {
+          // Polling failure is non-critical, ignore
+        }
+      }, 1500);
+
       try {
         const userInput: UserInput = {
           message,
@@ -95,6 +120,7 @@ export function useChat(
             file_metadata: response.file_metadata,
             categories: response.categories,
           },
+          stats: response.message_stats || undefined,
         };
 
         setChatState((prev) => ({
@@ -106,35 +132,30 @@ export function useChat(
             (response.analysis_tokens + response.instruction_tokens),
         }));
 
+        // Send actions and metadata to parent for file explorer updates
+        if (onResponseData && (response.actions.length > 0 || Object.keys(response.file_metadata).length > 0)) {
+          onResponseData({
+            actions: response.actions,
+            file_metadata: response.file_metadata,
+          });
+        }
+
         // Update session affected files if callback provided
         if (updateAffectedFiles && response.affected_files.length > 0) {
-          console.log(
-            "[CHAT-HOOKS] Updating affected files:",
-            response.affected_files
-          );
           updateAffectedFiles(response.affected_files);
         }
 
         // Trigger folder structure rescan if files were affected
         if (onFolderStructureChange && response.affected_files.length > 0) {
-          console.log(
-            "[CHAT-HOOKS] Triggering folder structure rescan. Affected files:",
-            response.affected_files.length
-          );
           onFolderStructureChange(response.affected_files);
         }
 
         // Show success toast if files were affected
         if (response.affected_files.length > 0) {
-          console.log(
-            "[CHAT-HOOKS] Files were affected, showing success toast"
-          );
           toast({
             title: "Files Updated",
             description: `${response.affected_files.length} file(s) were modified`,
           });
-        } else {
-          console.log("[CHAT-HOOKS] No files were affected by this response");
         }
       } catch (error) {
         if (error instanceof Error && error.name === "AbortError") {
@@ -156,10 +177,16 @@ export function useChat(
           variant: "destructive",
         });
       } finally {
+        // Stop status polling
+        if (pollingRef.current) {
+          clearInterval(pollingRef.current);
+          pollingRef.current = null;
+        }
+        setChatState((prev) => ({ ...prev, currentAction: "" }));
         abortControllerRef.current = null;
       }
     },
-    [sessionId, toast, updateAffectedFiles, onFolderStructureChange]
+    [sessionId, toast, updateAffectedFiles, onFolderStructureChange, onResponseData]
   );
 
   const stopGeneration = useCallback(() => {
@@ -185,6 +212,39 @@ export function useChat(
     }));
   }, []);
 
+  const loadMessages = useCallback(async () => {
+    if (!sessionId) return;
+
+    try {
+      const { messages } = await apiClient.getSessionMessages(sessionId);
+      const chatMessages: ChatMessage[] = messages.map(
+        (msg: Record<string, any>, index: number) => ({
+          id: `restored-${index}`,
+          role: msg.role as "user" | "assistant",
+          content: msg.content || "",
+          timestamp: new Date(msg.created_at),
+          stats:
+            msg.role === "assistant" && (msg.input_tokens || msg.output_tokens)
+              ? {
+                  input_tokens: msg.input_tokens || 0,
+                  output_tokens: msg.output_tokens || 0,
+                  cost_usd: msg.cost_usd || 0,
+                  duration_ms: msg.duration_ms || 0,
+                }
+              : undefined,
+        })
+      );
+
+      setChatState((prev) => ({
+        ...prev,
+        messages: chatMessages,
+        error: null,
+      }));
+    } catch (error) {
+      console.error("Failed to load messages:", error);
+    }
+  }, [sessionId]);
+
   const getTokenStats = useCallback(async () => {
     if (!sessionId) return null;
 
@@ -206,6 +266,7 @@ export function useChat(
     sendMessage,
     stopGeneration,
     clearMessages,
+    loadMessages,
     getTokenStats,
   };
 }

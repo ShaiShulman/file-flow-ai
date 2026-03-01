@@ -1,18 +1,39 @@
 "use client";
 
-import { Suspense, useEffect } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import FileExplorer from "@/features/file-explorer/components/file-explorer";
 import ChatInterface from "@/features/chat/components/chat-interface";
-import BottomPanel from "@/components/bottom-panel";
+import FileInfoPanel from "@/components/file-info-panel";
+import SessionPanel from "@/components/session-panel";
 import Toolbar from "@/components/toolbar";
 import { Toaster } from "@/components/ui/toaster";
-import { Card } from "@/components/ui/card";
 import { toast } from "@/components/ui/use-toast";
 import type { FileType, FolderType } from "@/lib/types";
-import { useState } from "react";
 import { downloadFolderAsZip } from "@/lib/actions/folder-manager";
 import { SessionProvider, useSessionContext } from "@/features/session/context";
 import { rescanFolderStructure } from "@/lib/utils/folder-utils";
+import { apiClient } from "@/features/api/client";
+import ExportDialog from "@/features/export/components/export-dialog";
+import {
+  ResizablePanelGroup,
+  ResizablePanel,
+  ResizableHandle,
+} from "@/components/ui/resizable";
+import { ChevronDown, ChevronUp } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import type { ImperativePanelHandle } from "react-resizable-panels";
+
+function findFileInTree(folder: FolderType, name: string): FileType | null {
+  for (const child of folder.children) {
+    if (child.type === "file" && child.name === name) return child;
+    if (child.type === "folder") {
+      const found = findFileInTree(child, name);
+      if (found) return found;
+    }
+  }
+  return null;
+}
 
 function HomeContent() {
   const [selectedFile, setSelectedFile] = useState<FileType | null>(null);
@@ -21,86 +42,148 @@ function HomeContent() {
   );
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isExportOpen, setIsExportOpen] = useState(false);
+  const [isSessionPanelCollapsed, setIsSessionPanelCollapsed] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(false);
+  const sessionPanelRef = useRef<ImperativePanelHandle>(null);
+  const restoredRef = useRef(false);
+
+  const searchParams = useSearchParams();
+  const router = useRouter();
 
   // Session management from context
   const {
     sessionState,
     createSession,
+    restoreSession,
     updateAffectedFiles: originalUpdateAffectedFiles,
     clearAffectedFiles,
+    updateFileChangeTypes,
+    updateAllFileMetadata,
   } = useSessionContext();
 
-  // Wrapper for updateAffectedFiles that optimizes the files
-  const updateAffectedFiles = (files: string[]) => {
-    console.log("[PAGE] Received affected files:", files);
+  // Restore session from URL parameter on mount
+  useEffect(() => {
+    const urlSessionId = searchParams.get("session");
+    if (urlSessionId && !sessionState.sessionId && !sessionState.isCreating && !restoredRef.current) {
+      restoredRef.current = true;
+      setIsRestoring(true);
 
-    // Don't update immediately - let handleFolderStructureChange handle it
-    // after the structure is rescanned so paths match properly
-    console.log(
-      "[PAGE] Deferring affected files update until after structure rescan"
-    );
+      (async () => {
+        try {
+          // Restore session state (fileChangeTypes, allFileMetadata)
+          const workingDirectory = await restoreSession(urlSessionId);
+
+          // Extract folderId from working directory (e.g., "uploads/extracted_{folderId}")
+          const match = workingDirectory.match(/extracted_(.+)$/);
+          const folderId = match ? match[1] : urlSessionId;
+
+          // Rescan folder structure
+          const folderStructure = await rescanFolderStructure(folderId);
+          if (folderStructure) {
+            setCurrentFolder(folderStructure);
+            setCurrentFolderId(folderId);
+          }
+
+          // Ensure backend agent is alive (idempotent create)
+          await apiClient.createSession(folderId, workingDirectory);
+        } catch {
+          // Session not found or restoration failed — clear URL param
+          router.replace("/");
+          toast({
+            title: "Session Not Found",
+            description: "The session could not be restored. It may have been deleted.",
+            variant: "destructive",
+          });
+        } finally {
+          setIsRestoring(false);
+        }
+      })();
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Sync URL with session state
+  useEffect(() => {
+    if (isRestoring) return;
+
+    const currentUrlSession = searchParams.get("session");
+    if (sessionState.sessionId) {
+      if (currentUrlSession !== sessionState.sessionId) {
+        router.replace(`?session=${sessionState.sessionId}`);
+      }
+    } else if (currentUrlSession) {
+      router.replace("/");
+    }
+  }, [sessionState.sessionId, isRestoring, searchParams, router]);
+
+  // Wrapper for updateAffectedFiles
+  const updateAffectedFiles = (files: string[]) => {
+    originalUpdateAffectedFiles(files);
+  };
+
+  // Handle actions and metadata from agent responses for file explorer indicators
+  const handleResponseData = (data: { actions: Array<Record<string, any>>; file_metadata: Record<string, any> }) => {
+    if (data.actions.length > 0) {
+      const changeTypes: Record<string, string> = {};
+      for (const action of data.actions) {
+        const path = action.item_path || action.item_name || "";
+        const actionType = action.action_type || "";
+        if (path && actionType) {
+          changeTypes[path] = actionType;
+        }
+      }
+      if (Object.keys(changeTypes).length > 0) {
+        updateFileChangeTypes(changeTypes);
+      }
+    }
+
+    if (Object.keys(data.file_metadata).length > 0) {
+      updateAllFileMetadata(data.file_metadata);
+    }
   };
 
   const handleFileSelect = (file: FileType) => {
     setSelectedFile(file);
   };
 
+  const handleFileSelectByName = (fileName: string) => {
+    if (currentFolder) {
+      const file = findFileInTree(currentFolder, fileName);
+      if (file) {
+        setSelectedFile(file);
+      }
+    }
+  };
+
   const handleFilesExtracted = (files: FolderType, folderId: string) => {
     setCurrentFolder(files);
     setCurrentFolderId(folderId);
-    // Clear affected files when new files are uploaded
     clearAffectedFiles();
   };
 
-  // Handle folder structure changes after agent responses
   const handleFolderStructureChange = async (newAffectedFiles?: string[]) => {
-    console.log(
-      "[PAGE] handleFolderStructureChange called. Current folder ID:",
-      currentFolderId
-    );
-    console.log("[PAGE] New affected files:", newAffectedFiles);
-
-    if (!currentFolderId) {
-      console.log("[PAGE] No current folder ID, skipping rescan");
-      return;
-    }
+    if (!currentFolderId) return;
 
     try {
-      console.log("[PAGE] Starting folder structure rescan...");
       const updatedStructure = await rescanFolderStructure(currentFolderId);
 
       if (updatedStructure) {
-        console.log(
-          "[PAGE] Received updated structure. Setting new currentFolder..."
-        );
-        console.log(
-          "[PAGE] Updated structure children count:",
-          updatedStructure.children.length
-        );
-
         setCurrentFolder(updatedStructure);
 
-        // If we have new affected files, update them after the structure is updated
         if (newAffectedFiles) {
-          console.log("[PAGE] Updating affected files after structure rescan");
           originalUpdateAffectedFiles(newAffectedFiles);
         }
-
-        console.log("[PAGE] currentFolder state updated successfully");
 
         toast({
           title: "File Structure Updated",
           description: "The file explorer has been refreshed to show changes",
         });
-      } else {
-        console.log("[PAGE] No updated structure received from rescan");
       }
     } catch (error) {
-      console.error("[PAGE] Failed to rescan folder structure:", error);
+      console.error("Failed to rescan folder structure:", error);
       toast({
         title: "Refresh Warning",
-        description:
-          "Failed to refresh file structure. You may need to reload the page.",
+        description: "Failed to refresh file structure. You may need to reload the page.",
         variant: "destructive",
       });
     }
@@ -108,21 +191,11 @@ function HomeContent() {
 
   // Create session when files are uploaded
   useEffect(() => {
-    if (
-      currentFolderId &&
-      !sessionState.sessionId &&
-      !sessionState.isCreating
-    ) {
-      // Get the working directory path for the uploaded folder
+    if (currentFolderId && !sessionState.sessionId && !sessionState.isCreating) {
       const workingDirectory = `/uploads/extracted_${currentFolderId}`;
       createSession(currentFolderId, workingDirectory);
     }
-  }, [
-    currentFolderId,
-    sessionState.sessionId,
-    sessionState.isCreating,
-    createSession,
-  ]);
+  }, [currentFolderId, sessionState.sessionId, sessionState.isCreating, createSession]);
 
   const handleDownload = async () => {
     try {
@@ -137,41 +210,26 @@ function HomeContent() {
         return;
       }
 
-      toast({
-        title: "Download Started",
-        description: "Creating ZIP file...",
-      });
+      toast({ title: "Download Started", description: "Creating ZIP file..." });
 
-      // Get the ZIP file content
-      const zipContent = await downloadFolderAsZip(currentFolderId);
-
-      // Create a blob and download it
+      const zipContent = await downloadFolderAsZip(currentFolderId, sessionState.sessionId);
       const blob = new Blob([zipContent], { type: "application/zip" });
       const url = URL.createObjectURL(blob);
 
-      // Create a temporary download link
       const a = document.createElement("a");
       a.href = url;
-      a.download = `fileflow-download-${
-        new Date().toISOString().split("T")[0]
-      }.zip`;
+      a.download = `fileflow-download-${new Date().toISOString().split("T")[0]}.zip`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-
-      // Clean up the URL
       URL.revokeObjectURL(url);
 
-      toast({
-        title: "Download Complete",
-        description: "Your files have been downloaded successfully.",
-      });
+      toast({ title: "Download Complete", description: "Your files have been downloaded successfully." });
     } catch (error) {
       console.error("Download error:", error);
       toast({
         title: "Download Failed",
-        description:
-          error instanceof Error ? error.message : "Failed to download files.",
+        description: error instanceof Error ? error.message : "Failed to download files.",
         variant: "destructive",
       });
     } finally {
@@ -179,51 +237,117 @@ function HomeContent() {
     }
   };
 
+  const toggleSessionPanel = () => {
+    const panel = sessionPanelRef.current;
+    if (panel) {
+      if (isSessionPanelCollapsed) {
+        panel.expand();
+      } else {
+        panel.collapse();
+      }
+    }
+  };
+
   return (
-    <main className="flex min-h-screen flex-col bg-slate-50 dark:bg-slate-900">
+    <main className="flex h-screen flex-col bg-slate-50 dark:bg-slate-900 overflow-hidden">
       <Toolbar
         onFilesExtracted={handleFilesExtracted}
         onDownload={handleDownload}
         isDownloading={isDownloading}
+        onExport={() => setIsExportOpen(true)}
+        hasSession={!!sessionState.sessionId}
       />
-      <div className="flex flex-1 overflow-hidden p-4 gap-4">
-        {/* Left side - Chat Interface */}
-        <Card className="w-1/2 p-4 flex flex-col h-[calc(100vh-140px)]">
-          <Suspense fallback={<div>Loading chat...</div>}>
-            <ChatInterface
-              sessionId={sessionState.sessionId}
-              workingDirectory={
-                currentFolderId
-                  ? `/uploads/extracted_${currentFolderId}`
-                  : undefined
-              }
-              updateAffectedFiles={updateAffectedFiles}
-              onFolderStructureChange={(affectedFiles) =>
-                handleFolderStructureChange(affectedFiles)
-              }
-            />
-          </Suspense>
-        </Card>
 
-        {/* Right side - File Explorer and Bottom Panel */}
-        <div className="w-1/2 flex flex-col h-[calc(100vh-140px)] gap-4">
-          <Card className="flex-1 p-4 overflow-auto">
-            <Suspense fallback={<div>Loading files...</div>}>
-              <FileExplorer
-                onFileSelect={handleFileSelect}
-                currentFolder={currentFolder}
+      <div className="flex-1 overflow-hidden">
+        <ResizablePanelGroup direction="horizontal" className="h-[calc(100vh-52px)]">
+          {/* Left: Chat */}
+          <ResizablePanel defaultSize={45} minSize={25} className="p-3">
+            <Suspense fallback={<div className="flex items-center justify-center h-full text-muted-foreground">Loading chat...</div>}>
+              <ChatInterface
+                sessionId={sessionState.sessionId}
+                workingDirectory={
+                  currentFolderId ? `/uploads/extracted_${currentFolderId}` : undefined
+                }
+                updateAffectedFiles={updateAffectedFiles}
+                onFolderStructureChange={(affectedFiles) =>
+                  handleFolderStructureChange(affectedFiles)
+                }
+                onResponseData={handleResponseData}
+                onFileSelect={handleFileSelectByName}
               />
             </Suspense>
-          </Card>
+          </ResizablePanel>
 
-          {/* Bottom Panel with Tabs */}
-          <Card className="h-[300px] p-4 overflow-auto">
-            <Suspense fallback={<div>Loading panel...</div>}>
-              <BottomPanel selectedFile={selectedFile} />
-            </Suspense>
-          </Card>
-        </div>
+          <ResizableHandle withHandle />
+
+          {/* Right: File Explorer + File Info + Session Info */}
+          <ResizablePanel defaultSize={55} minSize={30}>
+            <ResizablePanelGroup direction="vertical">
+              {/* File Explorer */}
+              <ResizablePanel defaultSize={40} minSize={15} className="p-2 overflow-hidden">
+                <Suspense fallback={<div className="flex items-center justify-center h-full text-muted-foreground">Loading files...</div>}>
+                  <FileExplorer
+                    onFileSelect={handleFileSelect}
+                    currentFolder={currentFolder}
+                    fileChangeTypes={sessionState.fileChangeTypes}
+                    allFileMetadata={sessionState.allFileMetadata}
+                  />
+                </Suspense>
+              </ResizablePanel>
+
+              <ResizableHandle withHandle />
+
+              {/* File Info (selected file) */}
+              <ResizablePanel defaultSize={30} minSize={10} className="p-2 overflow-hidden">
+                <Suspense fallback={<div className="flex items-center justify-center h-full text-muted-foreground">Loading...</div>}>
+                  <FileInfoPanel selectedFile={selectedFile} sessionId={sessionState.sessionId} />
+                </Suspense>
+              </ResizablePanel>
+
+              <ResizableHandle withHandle />
+
+              {/* Session Info (collapsible) */}
+              <ResizablePanel
+                ref={sessionPanelRef}
+                defaultSize={30}
+                minSize={10}
+                collapsible
+                collapsedSize={0}
+                onCollapse={() => setIsSessionPanelCollapsed(true)}
+                onExpand={() => setIsSessionPanelCollapsed(false)}
+                className="relative overflow-hidden"
+              >
+                {/* Collapse toggle button */}
+                <div className="absolute top-1 right-1 z-10">
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-6 w-6"
+                    onClick={toggleSessionPanel}
+                  >
+                    {isSessionPanelCollapsed ? (
+                      <ChevronUp className="h-3.5 w-3.5" />
+                    ) : (
+                      <ChevronDown className="h-3.5 w-3.5" />
+                    )}
+                  </Button>
+                </div>
+                <div className="p-2 h-full overflow-auto">
+                  <Suspense fallback={<div className="flex items-center justify-center h-full text-muted-foreground">Loading...</div>}>
+                    <SessionPanel sessionId={sessionState.sessionId} />
+                  </Suspense>
+                </div>
+              </ResizablePanel>
+            </ResizablePanelGroup>
+          </ResizablePanel>
+        </ResizablePanelGroup>
       </div>
+
+      <ExportDialog
+        open={isExportOpen}
+        onOpenChange={setIsExportOpen}
+        sessionId={sessionState.sessionId}
+      />
       <Toaster />
     </main>
   );
@@ -232,7 +356,9 @@ function HomeContent() {
 export default function Home() {
   return (
     <SessionProvider>
-      <HomeContent />
+      <Suspense fallback={<div className="flex items-center justify-center min-h-screen text-muted-foreground">Loading...</div>}>
+        <HomeContent />
+      </Suspense>
     </SessionProvider>
   );
 }

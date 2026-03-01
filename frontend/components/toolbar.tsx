@@ -7,12 +7,10 @@ import {
   Settings,
   Search,
   RefreshCw,
-  HelpCircle,
   FileText,
-  FolderPlus,
+  FileCode,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
   Tooltip,
@@ -21,19 +19,22 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import UploadDialog from "@/features/upload/components/upload-dialog";
-import { toast } from "@/components/ui/use-toast";
 import type { FolderType } from "@/lib/types";
 
 interface ToolbarProps {
   onFilesExtracted: (files: FolderType, folderId: string) => void;
   onDownload: () => Promise<void>;
   isDownloading: boolean;
+  onExport?: () => void;
+  hasSession?: boolean;
 }
 
 export default function Toolbar({
   onFilesExtracted,
   onDownload,
   isDownloading,
+  onExport,
+  hasSession = false,
 }: ToolbarProps) {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
 
@@ -48,94 +49,78 @@ export default function Toolbar({
   };
 
   return (
-    <Card
-      className="border-b rounded-none px-4 py-2 sticky top-0 z-10"
+    <div
+      className="border-b px-4 py-2 sticky top-0 z-10"
       style={{
         background: "linear-gradient(to right, #e6f0ff, #d4e6ff, #c2dcff)",
       }}
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <FileText className="h-6 w-6 text-slate-700" />
-          <h1 className="text-xl font-bold text-slate-800">FileFlow.ai</h1>
+          <FileText className="h-5 w-5 text-slate-700" />
+          <h1 className="text-lg font-bold text-slate-800">FileFlow.ai</h1>
         </div>
 
-        <div className="flex items-center gap-2 mx-4 flex-1 max-w-md">
+        <div className="flex items-center gap-2 mx-4 flex-1 max-w-sm">
           <div className="relative w-full">
-            <Search className="absolute left-2 top-2.5 h-4 w-4 text-slate-500" />
+            <Search className="absolute left-2 top-2 h-4 w-4 text-slate-500" />
             <Input
               placeholder="Search documents..."
-              className="pl-8 bg-white border-slate-300"
+              className="pl-8 h-8 bg-white border-slate-300 text-sm"
             />
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setIsUploadOpen(true)}
-                  className="bg-white border-slate-300 hover:bg-slate-100"
-                >
-                  <Upload className="h-4 w-4 text-slate-700" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Upload ZIP File</p>
-              </TooltipContent>
-            </Tooltip>
+            {/* Primary actions with labels */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsUploadOpen(true)}
+              className="bg-white border-slate-300 hover:bg-slate-100 h-8 text-xs"
+            >
+              <Upload className="h-3.5 w-3.5 mr-1.5" />
+              Upload
+            </Button>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={onDownload}
-                  disabled={isDownloading}
-                  className="bg-white border-slate-300 hover:bg-slate-100"
-                >
-                  {isDownloading ? (
-                    <RefreshCw className="h-4 w-4 text-slate-700 animate-spin" />
-                  ) : (
-                    <Download className="h-4 w-4 text-slate-700" />
-                  )}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>
-                  {isDownloading
-                    ? "Creating ZIP..."
-                    : "Download Current Bucket"}
-                </p>
-              </TooltipContent>
-            </Tooltip>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onDownload}
+              disabled={isDownloading}
+              className="bg-white border-slate-300 hover:bg-slate-100 h-8 text-xs"
+            >
+              {isDownloading ? (
+                <RefreshCw className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+              ) : (
+                <Download className="h-3.5 w-3.5 mr-1.5" />
+              )}
+              {isDownloading ? "Downloading..." : "Download"}
+            </Button>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="bg-white border-slate-300 hover:bg-slate-100"
-                >
-                  <FolderPlus className="h-4 w-4 text-slate-700" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>New Folder</p>
-              </TooltipContent>
-            </Tooltip>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onExport}
+              disabled={!hasSession}
+              className="bg-white border-slate-300 hover:bg-slate-100 h-8 text-xs"
+            >
+              <FileCode className="h-3.5 w-3.5 mr-1.5" />
+              Export
+            </Button>
 
+            <div className="w-px h-6 bg-slate-300 mx-1" />
+
+            {/* Secondary actions - icon only */}
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="icon"
-                  className="bg-white border-slate-300 hover:bg-slate-100"
+                  className="h-8 w-8 hover:bg-white/50"
                 >
-                  <RefreshCw className="h-4 w-4 text-slate-700" />
+                  <RefreshCw className="h-3.5 w-3.5 text-slate-600" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
@@ -146,11 +131,11 @@ export default function Toolbar({
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="icon"
-                  className="bg-white border-slate-300 hover:bg-slate-100"
+                  className="h-8 w-8 hover:bg-white/50"
                 >
-                  <Settings className="h-4 w-4 text-slate-700" />
+                  <Settings className="h-3.5 w-3.5 text-slate-600" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
@@ -166,6 +151,6 @@ export default function Toolbar({
         onOpenChange={setIsUploadOpen}
         onFilesExtracted={handleFilesExtracted}
       />
-    </Card>
+    </div>
   );
 }

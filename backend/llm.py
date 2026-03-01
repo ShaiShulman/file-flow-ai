@@ -4,8 +4,19 @@ import boto3
 from langchain_aws import ChatBedrock as Bedrock
 from config import BEDROCK_INSTRUCTIONS_MODEL_ID, AWS_DEFAULT_REGION, DEBUG_LLM
 
+# Module-level stats storage to avoid Pydantic PrivateAttr issues
+_call_stats_store: list = []
+
 
 class TimedBedrock(Bedrock):
+
+    @classmethod
+    def drain_stats(cls) -> list:
+        """Return and clear collected LLM call stats."""
+        stats = _call_stats_store.copy()
+        _call_stats_store.clear()
+        return stats
+
     def _prepare_message_dict(self, message_dicts):
         """
         Print the message dictionary as raw JSON to help with token optimization.
@@ -109,6 +120,26 @@ class TimedBedrock(Bedrock):
         start_time = time.time()
         result = super().invoke(*args, **kwargs)
         end_time = time.time()
+        duration_ms = int((end_time - start_time) * 1000)
+
+        # Collect stats for this call
+        usage = {}
+        if hasattr(result, "usage_metadata") and result.usage_metadata:
+            usage = result.usage_metadata
+        elif hasattr(result, "additional_kwargs") and "usage" in result.additional_kwargs:
+            usage = result.additional_kwargs["usage"]
+        call_input = usage.get("input_tokens", usage.get("prompt_tokens", 0))
+        call_output = usage.get("output_tokens", usage.get("completion_tokens", 0))
+        if not isinstance(call_input, int):
+            call_input = 0
+        if not isinstance(call_output, int):
+            call_output = 0
+        _call_stats_store.append({
+            "input_tokens": call_input,
+            "output_tokens": call_output,
+            "duration_ms": duration_ms,
+            "model_id": self.model_id if hasattr(self, "model_id") else "",
+        })
 
         # Print only the content property of the response and token usage
         if DEBUG_LLM:
