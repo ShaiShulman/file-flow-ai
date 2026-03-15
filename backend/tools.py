@@ -113,6 +113,7 @@ def handle_tool_error(state) -> dict:
             ToolMessage(
                 content=f"Error: {repr(error)}\n Please fix your mistakes.",
                 tool_call_id=tc["id"],
+                status="error",
             )
             for tc in tool_calls
         ]
@@ -175,6 +176,9 @@ def extract_tool_result(state) -> dict:
             if "affected_files" not in result:
                 result["affected_files"] = []
             result["affected_files"].extend(content_dict["affected_files"])
+            if "last_affected_files" not in result:
+                result["last_affected_files"] = []
+            result["last_affected_files"].extend(content_dict["affected_files"])
 
         # Handle actions from sensitive tools
         if "action" in content_dict and content_dict["action"] is not None:

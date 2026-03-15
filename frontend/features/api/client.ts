@@ -16,6 +16,7 @@ export interface AgentResponse {
   message?: string;
   working_directory: string;
   affected_files: string[];
+  last_affected_files: string[];
   analysis_tokens: number;
   instruction_tokens: number;
   actions: Array<Record<string, any>>;
@@ -52,13 +53,20 @@ export class ApiClient {
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
 
-    const response = await fetch(url, {
-      headers: {
-        "Content-Type": "application/json",
-        ...options.headers,
-      },
-      ...options,
-    });
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        headers: {
+          "Content-Type": "application/json",
+          ...options.headers,
+        },
+        ...options,
+      });
+    } catch {
+      throw new Error(
+        `Cannot connect to backend at ${this.baseUrl}. Make sure the server is running.`
+      );
+    }
 
     if (!response.ok) {
       const errorText = await response.text();

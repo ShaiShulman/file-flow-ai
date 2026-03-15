@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 body {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Inter", sans-serif;
 }
 
 @layer utilities {
@@ -93,11 +93,12 @@ body {
   }
 }
 
-@keyframes pulse-highlight {
-  0%, 100% { box-shadow: inset 3px 0 0 transparent; }
-  50% { box-shadow: inset 3px 0 0 #3b82f6; }
+.recently-affected {
+  background-color: #fef9c3 !important;
+  animation: pulse-highlight 1.5s ease-in-out 3;
 }
 
-.animate-pulse-highlight {
-  animation: pulse-highlight 1.5s ease-in-out 3;
+@keyframes pulse-highlight {
+  0%, 100% { box-shadow: inset 3px 0 0 transparent; }
+  50% { box-shadow: inset 3px 0 0 #d97706; }
 }

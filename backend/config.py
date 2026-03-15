@@ -6,10 +6,8 @@ DEBUG_GRAPH = True
 
 # AWS Bedrock Configuration
 AWS_DEFAULT_REGION = "us-east-1"
-BEDROCK_INSTRUCTIONS_MODEL_ID = "anthropic.claude-3-5-sonnet-20240620-v1:0"
-BEDROCK_TEXT_MODEL_ID = (
-    "us.anthropic.claude-3-5-haiku-20241022-v1:0"  # "amazon.titan-text-lite-v1"
-)
+BEDROCK_INSTRUCTIONS_MODEL_ID = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+BEDROCK_TEXT_MODEL_ID = "amazon.nova-micro-v1:0"  # "amazon.titan-text-lite-v1"1
 
 
 # Model Configuration
@@ -59,13 +57,13 @@ def calculate_cost(model_id: str, input_tokens: int, output_tokens: int) -> floa
 
 
 # OCR Configuration
-OCR_MIN_CONTENT_CHARS = 100        # Trigger OCR if extracted text < this many chars
-OCR_FIRST_PAGES = 3                # Number of first pages to extract from PDFs
-OCR_LAST_PAGES = 2                 # Number of last pages to extract from PDFs
-OCR_MIN_CHARS_THRESHOLD = 1500     # If total OCR text < this, return all of it
-OCR_FIRST_CHARS = 1000             # First N chars to keep when truncating OCR output
-OCR_LAST_CHARS = 500               # Last N chars to keep when truncating OCR output
-OCR_DPI = 300                      # DPI for rendering PDF pages to images for OCR
+OCR_MIN_CONTENT_CHARS = 100  # Trigger OCR if extracted text < this many chars
+OCR_FIRST_PAGES = 3  # Number of first pages to extract from PDFs
+OCR_LAST_PAGES = 2  # Number of last pages to extract from PDFs
+OCR_MIN_CHARS_THRESHOLD = 1500  # If total OCR text < this, return all of it
+OCR_FIRST_CHARS = 1000  # First N chars to keep when truncating OCR output
+OCR_LAST_CHARS = 500  # Last N chars to keep when truncating OCR output
+OCR_DPI = 300  # DPI for rendering PDF pages to images for OCR
 
 
 SYSTEM_MESSAGE = """

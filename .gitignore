@@ -44,3 +44,4 @@ backend/fileflow.db
 backend/fileflow.db-shm
 backend/fileflow.db-wal
 screenshots
+perl.exe.stackdump

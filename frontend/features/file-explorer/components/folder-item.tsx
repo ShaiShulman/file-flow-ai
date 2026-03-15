@@ -43,21 +43,19 @@ export default function FolderItem({
   const affectedFiles = sessionState.affectedFiles;
   const recentlyAffectedFiles = sessionState.recentlyAffectedFiles;
 
+  // Extract filename from a path (handles both / and \ separators)
+  const getFileName = (p: string) => p.split(/[\\/]/).pop() || p;
+
   // Check if this folder is affected
   const isFolderAffected = affectedFiles.some((affectedPath) => {
-    // Extract just the filename/folder name from the affected path
-    const affectedName = affectedPath.split("/").pop() || affectedPath;
+    const affectedName = getFileName(affectedPath);
     const folderName = folder.name;
 
-    // Check for exact matches only:
-    // 1. Direct name match (for renamed folders)
-    // 2. Exact path match (if we have full paths)
-    const matches =
+    return (
       affectedName === folderName ||
       affectedPath === folderName ||
-      (folder.path && affectedPath === folder.path);
-
-    return matches;
+      (folder.path && affectedPath === folder.path)
+    );
   });
 
   // Helper to find change type for a file/folder
@@ -66,7 +64,7 @@ export default function FolderItem({
     if (fileChangeTypes[name]) return fileChangeTypes[name];
     // Check by matching the last segment of affected paths
     for (const [key, value] of Object.entries(fileChangeTypes)) {
-      const keyName = key.split("/").pop() || key;
+      const keyName = getFileName(key);
       if (keyName === name) return value;
     }
     return undefined;
@@ -91,11 +89,10 @@ export default function FolderItem({
     } else {
       // Check if this file is affected by comparing paths
       const isAffected = affectedFiles.some((affectedPath) => {
-        const affectedName = affectedPath.split("/").pop() || affectedPath;
-        const fileName = item.name;
+        const affectedName = getFileName(affectedPath);
         return (
-          affectedName === fileName ||
-          affectedPath === fileName ||
+          affectedName === item.name ||
+          affectedPath === item.name ||
           (item.path && affectedPath === item.path)
         );
       });
@@ -103,7 +100,7 @@ export default function FolderItem({
       const changeType = getChangeType(item.name, item.path);
       const fileMeta = allFileMetadata[item.path] || allFileMetadata[item.name];
       const isRecentlyAffected = recentlyAffectedFiles.some((p) => {
-        const recentName = p.split("/").pop() || p;
+        const recentName = getFileName(p);
         return recentName === item.name || p === item.name || (item.path && p === item.path);
       });
 
@@ -127,11 +124,11 @@ export default function FolderItem({
     <div>
       <div
         className={cn(
-          "flex items-center py-0.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded cursor-pointer group",
+          "flex items-center py-0.5 hover:bg-stone-100 dark:hover:bg-stone-800 rounded cursor-pointer group",
           isRoot && "font-semibold",
           isFolderAffected &&
             !isRoot &&
-            "bg-green-50 dark:bg-green-900/20 border-l-2 border-green-500"
+            "bg-amber-50 dark:bg-amber-900/20"
         )}
         style={{ paddingLeft: isRoot ? "8px" : `${paddingLeft}px` }}
         onClick={() => onToggleFolder(folder.id)}
@@ -142,12 +139,12 @@ export default function FolderItem({
           <ChevronRight className="h-3.5 w-3.5 mr-1 flex-shrink-0" />
         )}
         {isRoot ? (
-          <Database className="h-3.5 w-3.5 text-slate-700 dark:text-slate-300 mr-1.5 flex-shrink-0" />
+          <Database className="h-3.5 w-3.5 text-stone-700 dark:text-stone-300 mr-1.5 flex-shrink-0" />
         ) : (
           <Folder
             className={cn(
               "h-3.5 w-3.5 mr-1.5 flex-shrink-0",
-              isFolderAffected ? "text-green-600" : "text-blue-500"
+              isFolderAffected ? "text-amber-500" : "text-stone-500"
             )}
           />
         )}
@@ -156,18 +153,18 @@ export default function FolderItem({
             "truncate text-xs",
             isFolderAffected &&
               !isRoot &&
-              "font-medium text-green-700 dark:text-green-300"
+              "font-medium text-amber-700 dark:text-amber-300"
           )}
         >
           {folder.name}
         </span>
-        <span className="ml-1.5 text-[10px] text-slate-500">
+        <span className="ml-1.5 text-[10px] text-stone-400">
           ({folder.children.length})
         </span>
 
         {isFolderAffected && !isRoot && (
-          <span className="ml-1.5 text-[10px] text-green-600 dark:text-green-400 font-medium">
-            ⚡ Modified
+          <span className="ml-1.5 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 px-1.5 py-0.5 rounded-full text-[10px] font-semibold">
+            NEW
           </span>
         )}
 

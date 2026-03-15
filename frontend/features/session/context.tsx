@@ -9,8 +9,9 @@ interface SessionContextType {
     folderId: string,
     workingDirectory?: string
   ) => Promise<string>;
-  updateAffectedFiles: (files: string[]) => void;
+  updateAffectedFiles: (files: string[], lastAffectedFiles?: string[]) => void;
   clearAffectedFiles: () => void;
+  clearRecentlyAffectedFiles: () => void;
   deleteSession: (sessionId: string) => Promise<void>;
   clearSession: () => void;
   restoreSession: (sessionId: string) => Promise<string>;

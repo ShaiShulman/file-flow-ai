@@ -123,12 +123,15 @@ export default function FileExplorer({
   const dummyToggleFolder = () => {};
   const dummySelectFile = () => {};
 
+  // Extract filename from a path (handles both / and \ separators)
+  const getFileName = (p: string) => p.split(/[\\/]/).pop() || p;
+
   // Helper to get change type for a file
   const getChangeType = (name: string, path?: string): string | undefined => {
     if (path && fileChangeTypes[path]) return fileChangeTypes[path];
     if (fileChangeTypes[name]) return fileChangeTypes[name];
     for (const [key, value] of Object.entries(fileChangeTypes)) {
-      const keyName = key.split("/").pop() || key;
+      const keyName = getFileName(key);
       if (keyName === name) return value;
     }
     return undefined;
@@ -138,10 +141,10 @@ export default function FileExplorer({
     return (
       <div className="h-full overflow-hidden relative">
         <div className="absolute inset-0 flex items-center justify-center z-10">
-          <div className="p-4 border border-slate-300 rounded-md bg-white shadow-md">
+          <div className="p-4 border border-stone-200 rounded-md bg-white shadow-md">
             <div className="flex items-center gap-2">
-              <Upload className="h-4 w-4 text-slate-600" />
-              <p className="text-slate-600">Upload zip file to process files</p>
+              <Upload className="h-4 w-4 text-stone-500" />
+              <p className="text-stone-500">Upload zip file to process files</p>
             </div>
           </div>
         </div>
@@ -182,13 +185,13 @@ export default function FileExplorer({
           );
         } else {
           const isAffected = affectedFiles.some((p) => {
-            const affectedName = p.split("/").pop() || p;
+            const affectedName = getFileName(p);
             return affectedName === child.name || p === child.name || (child.path && p === child.path);
           });
           const changeType = getChangeType(child.name, child.path);
           const fileMeta = allFileMetadata[child.path] || allFileMetadata[child.name];
           const isRecentlyAffected = recentlyAffectedFiles.some((p) => {
-            const recentName = p.split("/").pop() || p;
+            const recentName = getFileName(p);
             return recentName === child.name || p === child.name || (child.path && p === child.path);
           });
 

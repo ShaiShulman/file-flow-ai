@@ -36,8 +36,14 @@ class Assistant:
         # If we get an empty response, ask for clarification
         if not result.tool_calls and (
             not result.content
-            or isinstance(result.content, list)
-            and not result.content[0].get("text")
+            or (
+                isinstance(result.content, list)
+                and not any(
+                    (isinstance(block, dict) and block.get("text"))
+                    or (isinstance(block, str) and block.strip())
+                    for block in result.content
+                )
+            )
         ):
             messages = state["messages"] + [("user", "Respond with a real output.")]
             state = {

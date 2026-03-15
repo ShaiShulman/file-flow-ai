@@ -16,6 +16,7 @@ export interface ChatMessage {
   timestamp: Date;
   metadata?: {
     affected_files?: string[];
+    last_affected_files?: string[];
     actions?: Array<Record<string, any>>;
     file_metadata?: Record<string, any>;
     categories?: Record<string, any>;
@@ -38,8 +39,8 @@ export interface ChatState {
 
 export function useChat(
   sessionId: string | null,
-  updateAffectedFiles?: (files: string[]) => void,
-  onFolderStructureChange?: (affectedFiles?: string[]) => void,
+  updateAffectedFiles?: (files: string[], lastAffectedFiles?: string[]) => void,
+  onFolderStructureChange?: (affectedFiles?: string[], lastAffectedFiles?: string[]) => void,
   onResponseData?: (data: { actions: Array<Record<string, any>>; file_metadata: Record<string, any> }) => void
 ) {
   const [chatState, setChatState] = useState<ChatState>({
@@ -116,6 +117,7 @@ export function useChat(
           timestamp: new Date(),
           metadata: {
             affected_files: response.affected_files,
+            last_affected_files: response.last_affected_files,
             actions: response.actions,
             file_metadata: response.file_metadata,
             categories: response.categories,
@@ -142,19 +144,22 @@ export function useChat(
 
         // Update session affected files if callback provided
         if (updateAffectedFiles && response.affected_files.length > 0) {
-          updateAffectedFiles(response.affected_files);
+          updateAffectedFiles(response.affected_files, response.last_affected_files);
         }
 
         // Trigger folder structure rescan if files were affected
         if (onFolderStructureChange && response.affected_files.length > 0) {
-          onFolderStructureChange(response.affected_files);
+          onFolderStructureChange(response.affected_files, response.last_affected_files);
         }
 
         // Show success toast if files were affected
-        if (response.affected_files.length > 0) {
+        if (response.last_affected_files.length > 0) {
+          const uniqueCount = new Set(
+            response.last_affected_files.map((p) => p.split(/[\\/]/).pop() || p)
+          ).size;
           toast({
             title: "Files Updated",
-            description: `${response.affected_files.length} file(s) were modified`,
+            description: `${uniqueCount} file(s) were modified`,
           });
         }
       } catch (error) {

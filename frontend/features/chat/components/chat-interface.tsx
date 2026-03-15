@@ -41,9 +41,9 @@ function parseUserMessage(content: string): React.ReactNode {
         {fileNames.map((name, i) => (
           <span
             key={i}
-            className="inline-flex items-center gap-1 px-1.5 py-0.5 mx-0.5 rounded-md bg-slate-200 dark:bg-slate-600 text-xs text-slate-700 dark:text-slate-200 align-middle"
+            className="inline-flex items-center gap-1 px-1.5 py-0.5 mx-0.5 rounded-md bg-white dark:bg-blue-900 text-xs text-blue-700 dark:text-blue-200 border border-blue-200 align-middle"
           >
-            <FileText className="h-3 w-3 text-slate-500 dark:text-slate-400" />
+            <FileText className="h-3 w-3 text-blue-400 dark:text-blue-400" />
             {name}
           </span>
         ))}
@@ -58,9 +58,9 @@ function parseUserMessage(content: string): React.ReactNode {
       return (
         <span
           key={index}
-          className="inline-flex items-center gap-1 px-1.5 py-0.5 mx-0.5 rounded-md bg-slate-200 dark:bg-slate-600 text-xs text-slate-700 dark:text-slate-200 align-middle"
+          className="inline-flex items-center gap-1 px-1.5 py-0.5 mx-0.5 rounded-md bg-white dark:bg-blue-900 text-xs text-blue-700 dark:text-blue-200 border border-blue-200 align-middle"
         >
-          <FileText className="h-3 w-3 text-slate-500 dark:text-slate-400" />
+          <FileText className="h-3 w-3 text-blue-400 dark:text-blue-400" />
           {match[1]}
         </span>
       );
@@ -73,7 +73,7 @@ interface ChatInterfaceProps {
   sessionId: string | null;
   workingDirectory?: string;
   updateAffectedFiles?: (files: string[]) => void;
-  onFolderStructureChange?: (affectedFiles?: string[]) => void;
+  onFolderStructureChange?: (affectedFiles?: string[], lastAffectedFiles?: string[]) => void;
   onResponseData?: (data: { actions: Array<Record<string, any>>; file_metadata: Record<string, any> }) => void;
   onFileSelect?: (fileName: string) => void;
 }
@@ -188,8 +188,8 @@ export default function ChatInterface({
     badge.setAttribute("data-file-ref", fileRef.name);
     badge.setAttribute("contenteditable", "false");
     badge.className =
-      "inline-flex items-center gap-1 px-1.5 py-0.5 mx-0.5 rounded-md bg-slate-200 dark:bg-slate-700 text-xs text-slate-700 dark:text-slate-300 align-middle select-none";
-    badge.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-500" style="display:inline;vertical-align:middle"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg><span>${fileRef.name}</span>`;
+      "inline-flex items-center gap-1 px-1.5 py-0.5 mx-0.5 rounded-md bg-white dark:bg-blue-900 text-xs text-blue-700 dark:text-blue-200 border border-blue-200 dark:border-blue-700 align-middle select-none";
+    badge.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-400" style="display:inline;vertical-align:middle"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg><span>${fileRef.name}</span>`;
 
     // Add remove button
     const removeBtn = document.createElement("button");
@@ -286,10 +286,10 @@ export default function ChatInterface({
                 <div
                   key={message.id}
                   className={cn(
-                    "flex flex-col p-3 rounded-lg",
+                    "flex flex-col p-3",
                     message.role === "user"
-                      ? "bg-slate-100 dark:bg-slate-800 ml-auto max-w-[85%]"
-                      : "bg-white dark:bg-slate-900 border mr-auto max-w-[85%]"
+                      ? "bg-stone-100 dark:bg-stone-800 ml-auto max-w-[85%] rounded-2xl rounded-br-sm"
+                      : "bg-white dark:bg-stone-900 border border-stone-200 mr-auto max-w-[85%] rounded-2xl rounded-bl-sm"
                   )}
                 >
                   <div className="whitespace-pre-wrap text-sm">
@@ -300,11 +300,15 @@ export default function ChatInterface({
 
                   {/* Affected files count for assistant messages */}
                   {message.role === "assistant" &&
-                    message.metadata?.affected_files &&
-                    message.metadata.affected_files.length > 0 && (
+                    message.metadata?.last_affected_files &&
+                    message.metadata.last_affected_files.length > 0 && (
                       <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
                         <FileText className="h-3 w-3" />
-                        <span>{message.metadata.affected_files.length} file(s) affected</span>
+                        <span>
+                          {new Set(message.metadata.last_affected_files.map(
+                            (p) => p.split(/[\\/]/).pop() || p
+                          )).size} file(s) affected
+                        </span>
                       </div>
                     )}
 
@@ -333,7 +337,7 @@ export default function ChatInterface({
 
               {/* Processing indicator */}
               {chatState.isProcessing && (
-                <div className="flex flex-col p-3 rounded-lg bg-white dark:bg-slate-900 border mr-auto max-w-[85%]">
+                <div className="flex flex-col p-3 bg-white dark:bg-stone-900 border border-stone-200 mr-auto max-w-[85%] rounded-2xl rounded-bl-sm">
                   <div className="flex items-center gap-2">
                     <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
                     <span className="text-sm text-muted-foreground">Processing your request...</span>
@@ -355,8 +359,8 @@ export default function ChatInterface({
       <div className="pt-3">
         <div
           className={cn(
-            "relative rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 transition-colors focus-within:ring-2 focus-within:ring-slate-400 dark:focus-within:ring-slate-600",
-            isDragOver && "ring-2 ring-blue-400 bg-blue-50/30 dark:bg-blue-900/10"
+            "relative rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950 transition-colors focus-within:ring-2 focus-within:ring-blue-300 dark:focus-within:ring-blue-700",
+            isDragOver && "ring-2 ring-blue-400 bg-blue-100/50 dark:bg-blue-900/30"
           )}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
@@ -371,7 +375,7 @@ export default function ChatInterface({
             aria-placeholder="What changes do you want to make?"
             className={cn(
               "w-full bg-transparent px-4 py-3 pr-16 text-sm focus:outline-none min-h-[80px] max-h-[200px] overflow-y-auto",
-              "empty:before:content-[attr(aria-placeholder)] empty:before:text-muted-foreground empty:before:pointer-events-none"
+              "empty:before:content-[attr(aria-placeholder)] empty:before:text-blue-300 empty:before:pointer-events-none"
             )}
             onKeyDown={handleKeyDown}
             onPaste={handlePaste}
@@ -392,9 +396,9 @@ export default function ChatInterface({
                 size="icon"
                 onClick={handleSendMessage}
                 disabled={false}
-                className="rounded-full h-8 w-8 bg-slate-900 dark:bg-slate-100 hover:bg-slate-800 dark:hover:bg-white"
+                className="rounded-full h-8 w-8 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-400"
               >
-                <ArrowUp className="h-4 w-4 text-white dark:text-slate-900" />
+                <ArrowUp className="h-4 w-4 text-white" />
               </Button>
             )}
           </div>

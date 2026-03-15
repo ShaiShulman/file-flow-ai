@@ -18,6 +18,7 @@ class RunResult:
     analysis_tokens: int
     instruction_tokens: int
     actions: List[ActionInfo]
+    last_affected_files: List[str]
 
 
 class AgentRunner:
@@ -31,6 +32,7 @@ class AgentRunner:
         self.working_directory = working_directory
         self.debug = debug
         self.affected_files = []
+        self.last_affected_files = []
         self.file_metadata = {}
         self.analysis_tokens = 0
         self.instruction_tokens = 0
@@ -77,6 +79,7 @@ class AgentRunner:
                 "file_metadata": self.file_metadata,
                 "analysis_tokens": self.analysis_tokens,
                 "actions": ClearList(),
+                "last_affected_files": ClearList(),
             },
             self.memory_config,
             stream_mode="values",
@@ -138,9 +141,13 @@ class AgentRunner:
                             )
                             msg_str = f"\n    - [{msg_idx}] [{msg_type}] {msg}"
                             if msg_type == "AIMessage":
-                                instruction_tokens += msg.additional_kwargs.get(
-                                    "usage", {}
-                                ).get("total_tokens", 0)
+                                # Try usage_metadata first (Converse API), fall back to additional_kwargs
+                                if hasattr(msg, "usage_metadata") and msg.usage_metadata:
+                                    instruction_tokens += msg.usage_metadata.get("total_tokens", 0)
+                                else:
+                                    instruction_tokens += msg.additional_kwargs.get(
+                                        "usage", {}
+                                    ).get("total_tokens", 0)
                             # Color individual messages red if they contain the word error, blue otherwise
                             if "error" in str(msg).lower():
                                 msg_str = (
@@ -176,6 +183,7 @@ class AgentRunner:
                 self.working_directory = last_event["working_directory"]
 
             self.affected_files = last_event["affected_files"]
+            self.last_affected_files = last_event.get("last_affected_files", [])
             self.file_metadata = last_event.get("file_metadata", self.file_metadata)
             self.analysis_tokens = last_event["analysis_tokens"]
             self.instruction_tokens = instruction_tokens
@@ -203,6 +211,7 @@ class AgentRunner:
             state = {
                 "working_directory": self.working_directory,
                 "affected_files": self.affected_files,
+                "last_affected_files": self.last_affected_files,
                 "file_metadata": self.file_metadata,
                 "analysis_tokens": self.analysis_tokens,
                 "instruction_tokens": self.instruction_tokens,
@@ -219,6 +228,7 @@ class AgentRunner:
                 analysis_tokens=self.analysis_tokens,
                 instruction_tokens=self.instruction_tokens,
                 actions=self.actions,
+                last_affected_files=self.last_affected_files,
             )
 
         return RunResult(
@@ -227,4 +237,5 @@ class AgentRunner:
             analysis_tokens=0,
             instruction_tokens=0,
             actions=[],
+            last_affected_files=[],
         )

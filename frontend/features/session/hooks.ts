@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback } from "react";
 import { apiClient, type SessionResponse } from "@/features/api/client";
 import { useToast } from "@/components/ui/use-toast";
 import { getCategories } from "@/features/categories/actions";
@@ -27,7 +27,6 @@ export function useSession() {
     recentlyAffectedFiles: [],
   });
   const { toast } = useToast();
-  const recentTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const createSession = useCallback(
     async (folderId: string, workingDirectory?: string) => {
@@ -134,23 +133,19 @@ export function useSession() {
     });
   }, []);
 
-  const updateAffectedFiles = useCallback((files: string[]) => {
+  const updateAffectedFiles = useCallback((files: string[], lastAffectedFiles?: string[]) => {
     setSessionState((prev) => ({
       ...prev,
       affectedFiles: files,
-      recentlyAffectedFiles: files,
+      recentlyAffectedFiles: lastAffectedFiles ?? files,
     }));
+  }, []);
 
-    // Clear recently affected files after 5 seconds
-    if (recentTimerRef.current) {
-      clearTimeout(recentTimerRef.current);
-    }
-    recentTimerRef.current = setTimeout(() => {
-      setSessionState((prev) => ({
-        ...prev,
-        recentlyAffectedFiles: [],
-      }));
-    }, 5000);
+  const clearRecentlyAffectedFiles = useCallback(() => {
+    setSessionState((prev) => ({
+      ...prev,
+      recentlyAffectedFiles: [],
+    }));
   }, []);
 
   const clearAffectedFiles = useCallback(() => {
@@ -242,6 +237,7 @@ export function useSession() {
     restoreSession,
     updateAffectedFiles,
     clearAffectedFiles,
+    clearRecentlyAffectedFiles,
     updateFileChangeTypes,
     updateAllFileMetadata,
   };

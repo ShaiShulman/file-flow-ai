@@ -58,6 +58,7 @@ function HomeContent() {
     restoreSession,
     updateAffectedFiles: originalUpdateAffectedFiles,
     clearAffectedFiles,
+    clearRecentlyAffectedFiles,
     updateFileChangeTypes,
     updateAllFileMetadata,
   } = useSessionContext();
@@ -116,9 +117,10 @@ function HomeContent() {
     }
   }, [sessionState.sessionId, isRestoring, searchParams, router]);
 
-  // Wrapper for updateAffectedFiles
-  const updateAffectedFiles = (files: string[]) => {
-    originalUpdateAffectedFiles(files);
+  // Wrapper for updateAffectedFiles — clears old highlights before setting new ones
+  const updateAffectedFiles = (files: string[], lastAffectedFiles?: string[]) => {
+    clearRecentlyAffectedFiles();
+    originalUpdateAffectedFiles(files, lastAffectedFiles);
   };
 
   // Handle actions and metadata from agent responses for file explorer indicators
@@ -161,7 +163,7 @@ function HomeContent() {
     clearAffectedFiles();
   };
 
-  const handleFolderStructureChange = async (newAffectedFiles?: string[]) => {
+  const handleFolderStructureChange = async (newAffectedFiles?: string[], lastAffectedFiles?: string[]) => {
     if (!currentFolderId) return;
 
     try {
@@ -170,14 +172,14 @@ function HomeContent() {
       if (updatedStructure) {
         setCurrentFolder(updatedStructure);
 
-        if (newAffectedFiles) {
-          originalUpdateAffectedFiles(newAffectedFiles);
+        // Re-trigger recentlyAffectedFiles AFTER the tree is updated,
+        // so the highlight timer starts when the new files are actually rendered
+        if (lastAffectedFiles && lastAffectedFiles.length > 0) {
+          originalUpdateAffectedFiles(
+            sessionState.affectedFiles.length > 0 ? sessionState.affectedFiles : (newAffectedFiles ?? []),
+            lastAffectedFiles
+          );
         }
-
-        toast({
-          title: "File Structure Updated",
-          description: "The file explorer has been refreshed to show changes",
-        });
       }
     } catch (error) {
       console.error("Failed to rescan folder structure:", error);
@@ -193,7 +195,9 @@ function HomeContent() {
   useEffect(() => {
     if (currentFolderId && !sessionState.sessionId && !sessionState.isCreating) {
       const workingDirectory = `/uploads/extracted_${currentFolderId}`;
-      createSession(currentFolderId, workingDirectory);
+      createSession(currentFolderId, workingDirectory).catch(() => {
+        // Error already handled via toast in createSession
+      });
     }
   }, [currentFolderId, sessionState.sessionId, sessionState.isCreating, createSession]);
 
@@ -249,7 +253,7 @@ function HomeContent() {
   };
 
   return (
-    <main className="flex h-screen flex-col bg-slate-50 dark:bg-slate-900 overflow-hidden">
+    <main className="flex h-screen flex-col bg-stone-50 dark:bg-stone-900 overflow-hidden">
       <Toolbar
         onFilesExtracted={handleFilesExtracted}
         onDownload={handleDownload}
@@ -269,8 +273,8 @@ function HomeContent() {
                   currentFolderId ? `/uploads/extracted_${currentFolderId}` : undefined
                 }
                 updateAffectedFiles={updateAffectedFiles}
-                onFolderStructureChange={(affectedFiles) =>
-                  handleFolderStructureChange(affectedFiles)
+                onFolderStructureChange={(affectedFiles, lastAffectedFiles) =>
+                  handleFolderStructureChange(affectedFiles, lastAffectedFiles)
                 }
                 onResponseData={handleResponseData}
                 onFileSelect={handleFileSelectByName}

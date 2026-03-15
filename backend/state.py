@@ -10,5 +10,6 @@ class State(TypedDict):
     working_directory: str
     analysis_tokens: int
     affected_files: AccumulatorList[str]
+    last_affected_files: AccumulatorList[str]
     file_metadata: FlexibleMap
     actions: AccumulatorList[ActionInfo]

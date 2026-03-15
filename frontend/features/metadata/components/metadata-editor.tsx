@@ -16,7 +16,6 @@ import { Plus, Trash2, X } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import type { FileType, MetadataField } from "@/lib/types";
 import { apiClient } from "@/features/api/client";
-import { Card, CardContent } from "@/components/ui/card";
 import { useSessionContext } from "@/features/session/context";
 
 interface MetadataEditorProps {
@@ -217,82 +216,68 @@ export default function MetadataEditor({
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex justify-between items-center mb-3">
-        <h3 className="text-sm font-medium truncate">{selectedFile.name}</h3>
-      </div>
-
       <div className="flex-1 overflow-hidden">
-        <div className="h-full overflow-y-auto pr-2 space-y-3">
+        <div className="h-full overflow-y-auto pr-2 space-y-2">
           {/* Core fields */}
-          <Card>
-            <CardContent className="pt-4 space-y-3">
-              <div className="space-y-1">
-                <Label htmlFor="category" className="text-xs">
-                  Category
-                </Label>
-                <Select
-                  value={metadata.category || ""}
-                  onValueChange={(value) => updateField("category", value)}
-                >
-                  <SelectTrigger className="h-8">
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((cat) => (
-                      <SelectItem key={cat} value={cat}>
-                        {cat}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+          <div className="space-y-2">
+            <div className="flex items-center">
+              <Label htmlFor="category" className="text-xs text-stone-500 w-[80px] shrink-0">
+                Category
+              </Label>
+              <Select
+                value={metadata.category || ""}
+                onValueChange={(value) => updateField("category", value)}
+              >
+                <SelectTrigger className="h-8 border-stone-200">
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((cat) => (
+                    <SelectItem key={cat} value={cat}>
+                      {cat}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-              <div className="space-y-1">
-                <Label htmlFor="date" className="text-xs">
-                  Date
-                </Label>
-                <div className="relative">
-                  <Input
-                    id="date"
-                    type="date"
-                    className="h-8"
-                    value={metadata.date || ""}
-                    onChange={(e) => {
-                      updateField("date", e.target.value);
-                    }}
-                  />
-                  {metadata.date && (
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="absolute right-0 top-0 h-full px-2"
-                      onClick={() => updateField("date", "")}
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  )}
-                </div>
+            <div className="flex items-center">
+              <Label htmlFor="date" className="text-xs text-stone-500 w-[80px] shrink-0">
+                Date
+              </Label>
+              <div className="relative flex-1">
+                <Input
+                  id="date"
+                  type="date"
+                  className="h-8 border-stone-200"
+                  value={metadata.date || ""}
+                  onChange={(e) => {
+                    updateField("date", e.target.value);
+                  }}
+                />
+                {metadata.date && (
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="absolute right-0 top-0 h-full px-2"
+                    onClick={() => updateField("date", "")}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                )}
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
           {/* User-defined fields */}
           {fields.length > 0 && (
-            <Card>
-              <CardContent className="pt-4 space-y-3">
-                {fields.map((field) => (
-                  <div key={field.field_name} className="space-y-1">
-                    <div className="flex items-center justify-between">
-                      <Label className="text-xs">{field.field_name}</Label>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-5 w-5"
-                        onClick={() => handleDeleteField(field.field_name)}
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
+            <div className="space-y-2 pt-1">
+              {fields.map((field) => (
+                <div key={field.field_name} className="flex items-start">
+                  <div className="flex items-center w-[80px] shrink-0 pt-1.5">
+                    <Label className="text-xs text-stone-500 truncate">{field.field_name}</Label>
+                  </div>
+                  <div className="flex-1">
                     {field.field_type === "textarea" ? (
                       <Textarea
                         value={metadata[field.field_name] || ""}
@@ -300,12 +285,12 @@ export default function MetadataEditor({
                           updateField(field.field_name, e.target.value)
                         }
                         rows={2}
-                        className="text-sm"
+                        className="text-sm border-stone-200"
                       />
                     ) : (
                       <Input
                         type={field.field_type === "date" ? "date" : "text"}
-                        className="h-8"
+                        className="h-8 border-stone-200"
                         value={metadata[field.field_name] || ""}
                         onChange={(e) =>
                           updateField(field.field_name, e.target.value)
@@ -313,45 +298,49 @@ export default function MetadataEditor({
                       />
                     )}
                   </div>
-                ))}
-              </CardContent>
-            </Card>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 shrink-0 ml-1"
+                    onClick={() => handleDeleteField(field.field_name)}
+                  >
+                    <Trash2 className="h-3 w-3 text-stone-400" />
+                  </Button>
+                </div>
+              ))}
+            </div>
           )}
 
           {/* Add new field */}
-          <Card>
-            <CardContent className="pt-4">
-              <div className="flex items-end gap-2">
-                <div className="flex-1">
-                  <Input
-                    placeholder="Field name"
-                    value={newFieldName}
-                    onChange={(e) => setNewFieldName(e.target.value)}
-                    className="h-8 text-sm"
-                  />
-                </div>
-                <Select value={newFieldType} onValueChange={setNewFieldType}>
-                  <SelectTrigger className="h-8 w-24">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="text">Text</SelectItem>
-                    <SelectItem value="date">Date</SelectItem>
-                    <SelectItem value="textarea">Long text</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button
-                  size="sm"
-                  className="h-8"
-                  onClick={handleAddField}
-                  disabled={!newFieldName.trim()}
-                >
-                  <Plus className="h-3.5 w-3.5 mr-1" />
-                  Add
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <div className="flex items-end gap-2 pt-2 border-t border-stone-100">
+            <div className="flex-1">
+              <Input
+                placeholder="Field name"
+                value={newFieldName}
+                onChange={(e) => setNewFieldName(e.target.value)}
+                className="h-8 text-sm border-stone-200"
+              />
+            </div>
+            <Select value={newFieldType} onValueChange={setNewFieldType}>
+              <SelectTrigger className="h-8 w-24 border-stone-200">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="text">Text</SelectItem>
+                <SelectItem value="date">Date</SelectItem>
+                <SelectItem value="textarea">Long text</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              size="sm"
+              className="h-8"
+              onClick={handleAddField}
+              disabled={!newFieldName.trim()}
+            >
+              <Plus className="h-3.5 w-3.5 mr-1" />
+              Add
+            </Button>
+          </div>
         </div>
       </div>
     </div>

@@ -46,7 +46,14 @@
       "mcp__paper__write_html",
       "mcp__paper__get_screenshot",
       "mcp__paper__update_styles",
-      "mcp__paper__finish_working_on_nodes"
+      "mcp__paper__finish_working_on_nodes",
+      "Bash(py --list)",
+      "Bash(python3 -c \"from langchain_aws import ChatBedrock; help\\(ChatBedrock.bind_tools\\)\")",
+      "Bash(python3:*)",
+      "Bash(ls -la /c/Users/ShaiS/Documents/Repos/file-flow-ai/backend/*.py)",
+      "Bash(pip show:*)",
+      "Bash(pip install:*)",
+      "Bash(npx tsc:*)"
     ]
   }
 }

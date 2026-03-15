@@ -15,17 +15,14 @@ export default function SessionPanel({ sessionId }: SessionPanelProps) {
   return (
     <div className="h-full flex flex-col overflow-hidden">
       <Tabs defaultValue="changes" className="flex-1 flex flex-col overflow-hidden">
-        <TabsList className="grid w-full grid-cols-3 h-8 shrink-0">
-          <TabsTrigger value="changes" className="text-xs gap-1">
-            <History className="h-3 w-3" />
+        <TabsList className="grid w-full grid-cols-3 h-8 shrink-0 bg-transparent rounded-none border-b border-stone-200 p-0">
+          <TabsTrigger value="changes" className="text-xs gap-1 rounded-none shadow-none bg-transparent data-[state=active]:shadow-none data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-stone-900 pb-2">
             All Changes
           </TabsTrigger>
-          <TabsTrigger value="categories" className="text-xs gap-1">
-            <Tag className="h-3 w-3" />
+          <TabsTrigger value="categories" className="text-xs gap-1 rounded-none shadow-none bg-transparent data-[state=active]:shadow-none data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-stone-900 pb-2">
             Categories
           </TabsTrigger>
-          <TabsTrigger value="analytics" className="text-xs gap-1">
-            <BarChart3 className="h-3 w-3" />
+          <TabsTrigger value="analytics" className="text-xs gap-1 rounded-none shadow-none bg-transparent data-[state=active]:shadow-none data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-stone-900 pb-2">
             Analytics
           </TabsTrigger>
         </TabsList>

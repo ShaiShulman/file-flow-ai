@@ -37,40 +37,15 @@ interface FileItemProps {
 function getChangeIndicator(changeType?: string) {
   if (!changeType) return null;
   if (changeType.includes("create"))
-    return {
-      icon: <PlusCircle className="h-3 w-3 text-green-500" />,
-      bg: "bg-green-50 dark:bg-green-900/20",
-      border: "border-green-500",
-      label: "Created",
-    };
+    return { dot: "bg-green-500", bg: "bg-green-50 dark:bg-green-900/20", label: "Created" };
   if (changeType.includes("delete"))
-    return {
-      icon: <Trash2 className="h-3 w-3 text-red-500" />,
-      bg: "bg-red-50 dark:bg-red-900/20",
-      border: "border-red-500",
-      label: "Deleted",
-    };
+    return { dot: "bg-red-500", bg: "bg-red-50 dark:bg-red-900/20", label: "Deleted" };
   if (changeType.includes("copy"))
-    return {
-      icon: <Copy className="h-3 w-3 text-violet-500" />,
-      bg: "bg-violet-50 dark:bg-violet-900/20",
-      border: "border-violet-500",
-      label: "Copied",
-    };
+    return { dot: "bg-violet-500", bg: "bg-violet-50 dark:bg-violet-900/20", label: "Copied" };
   if (changeType.includes("move"))
-    return {
-      icon: <ArrowRightLeft className="h-3 w-3 text-amber-500" />,
-      bg: "bg-amber-50 dark:bg-amber-900/20",
-      border: "border-amber-500",
-      label: "Moved",
-    };
+    return { dot: "bg-amber-500", bg: "bg-amber-50 dark:bg-amber-900/20", label: "Moved" };
   if (changeType.includes("rename") || changeType.includes("modify"))
-    return {
-      icon: <Pencil className="h-3 w-3 text-blue-500" />,
-      bg: "bg-blue-50 dark:bg-blue-900/20",
-      border: "border-blue-500",
-      label: "Modified",
-    };
+    return { dot: "bg-blue-500", bg: "bg-blue-50 dark:bg-blue-900/20", label: "Modified" };
   return null;
 }
 
@@ -99,20 +74,20 @@ export default function FileItem({
       draggable
       onDragStart={handleDragStart}
       className={cn(
-        "flex items-center py-0.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded cursor-pointer group",
-        isSelected && "bg-blue-600 text-white hover:bg-blue-700",
-        !isSelected && indicator
-          ? `${indicator.bg} border-l-2 ${indicator.border}`
-          : !isSelected && isAffected && "bg-green-50 dark:bg-green-900/20 border-l-2 border-green-500",
-        isRecentlyAffected && "animate-pulse-highlight"
+        "flex items-center py-0.5 rounded cursor-pointer group",
+        !isRecentlyAffected && "hover:bg-stone-100 dark:hover:bg-stone-800",
+        isSelected && !isRecentlyAffected && "bg-amber-50 text-amber-900 ring-1 ring-amber-300 hover:bg-amber-100",
+        !isSelected && !isRecentlyAffected && indicator && indicator.bg,
+        !isSelected && !isRecentlyAffected && !indicator && isAffected && "bg-green-50 dark:bg-green-900/20",
+        isRecentlyAffected && "recently-affected"
       )}
       style={{ paddingLeft: `${paddingLeft}px` }}
       onClick={() => onSelect(file)}
     >
       {file.extension === "pdf" ? (
-        <FilePdf className={cn("h-3.5 w-3.5 mr-1.5 flex-shrink-0", isSelected ? "text-white" : "text-red-500")} />
+        <FilePdf className="h-3.5 w-3.5 mr-1.5 flex-shrink-0 text-red-500" />
       ) : (
-        <FileText className={cn("h-3.5 w-3.5 mr-1.5 flex-shrink-0", isSelected ? "text-white" : "text-blue-500")} />
+        <FileText className="h-3.5 w-3.5 mr-1.5 flex-shrink-0 text-stone-500" />
       )}
       <span className="truncate text-xs">{file.name}</span>
 
@@ -120,23 +95,19 @@ export default function FileItem({
         <ScanLine className="h-3 w-3 ml-1 text-cyan-500 shrink-0" title="OCR scanned" />
       )}
 
-      {indicator && (
-        <div className="ml-1.5 shrink-0">{indicator.icon}</div>
-      )}
+      <div className="ml-auto flex items-center gap-1">
+        {indicator && (
+          <div className={cn("w-1.5 h-1.5 rounded-full shrink-0", indicator.dot)} />
+        )}
+        {isAffected && !indicator && (
+          <div className="w-1.5 h-1.5 rounded-full shrink-0 bg-green-500" />
+        )}
+        {file.changed && !indicator && !isAffected && (
+          <div className="w-1.5 h-1.5 rounded-full shrink-0 bg-amber-500" />
+        )}
+      </div>
 
-      {isAffected && !indicator && (
-        <div className="ml-1.5 shrink-0">
-          <PlusCircle className="h-3 w-3 text-green-600" />
-        </div>
-      )}
-
-      {file.changed && !indicator && (
-        <div className="ml-1.5 shrink-0">
-          <AlertCircle className="h-3 w-3 text-amber-500" />
-        </div>
-      )}
-
-      <div className="ml-auto opacity-0 group-hover:opacity-100 flex items-center">
+      <div className="opacity-0 group-hover:opacity-100 flex items-center">
         <Button size="icon" variant="ghost" className="h-5 w-5">
           <Edit className="h-3 w-3" />
         </Button>

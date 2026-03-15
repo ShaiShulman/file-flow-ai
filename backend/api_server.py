@@ -31,6 +31,7 @@ class AgentResponse(BaseModel):
     message: Optional[str]
     working_directory: str
     affected_files: List[str]
+    last_affected_files: List[str]
     analysis_tokens: int
     instruction_tokens: int
     actions: List[Dict[str, Any]]
@@ -172,6 +173,7 @@ class AgentAPI:
             message=result.result_message,
             working_directory=agent.working_directory,
             affected_files=agent.affected_files,
+            last_affected_files=[f for f in result.last_affected_files if os.path.isfile(f)],
             analysis_tokens=result.analysis_tokens,
             instruction_tokens=result.instruction_tokens,
             actions=[action.to_dict() for action in result.actions],

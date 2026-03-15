@@ -20,7 +20,7 @@ class TimedBedrock(Bedrock):
     def _prepare_message_dict(self, message_dicts):
         """
         Print the message dictionary as raw JSON to help with token optimization.
-        This is useful for seeing exactly what's being sent to the API.
+        Note: Not called when beta_use_converse_api=True (Converse API uses a different path).
         """
         if DEBUG_LLM:
             raw_request = json.dumps(message_dicts, indent=2)
@@ -193,6 +193,7 @@ def create_bedrock_llm(client):
         client=client,
         model_kwargs={"temperature": 0},
         region_name=AWS_DEFAULT_REGION,
+        beta_use_converse_api=True,
     )
 
 

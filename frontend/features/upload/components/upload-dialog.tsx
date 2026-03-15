@@ -37,6 +37,7 @@ export default function UploadDialog({
   const [file, setFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
+  const [fileError, setFileError] = useState<string | null>(null);
   const { toast } = useToast();
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -55,12 +56,9 @@ export default function UploadDialog({
     const droppedFile = e.dataTransfer.files[0];
     if (droppedFile && droppedFile.name.endsWith(".zip")) {
       setFile(droppedFile);
+      setFileError(null);
     } else {
-      toast({
-        title: "Invalid file",
-        description: "Please upload a ZIP file",
-        variant: "destructive",
-      });
+      setFileError("Only ZIP files are supported. Please upload a .zip file.");
     }
   };
 
@@ -68,12 +66,9 @@ export default function UploadDialog({
     const selectedFile = e.target.files?.[0];
     if (selectedFile && selectedFile.name.endsWith(".zip")) {
       setFile(selectedFile);
+      setFileError(null);
     } else if (selectedFile) {
-      toast({
-        title: "Invalid file",
-        description: "Please upload a ZIP file",
-        variant: "destructive",
-      });
+      setFileError("Only ZIP files are supported. Please upload a .zip file.");
     }
   };
 
@@ -119,6 +114,7 @@ export default function UploadDialog({
     setFile(null);
     setUploadProgress(0);
     setIsUploading(false);
+    setFileError(null);
   };
 
   return (
@@ -196,6 +192,10 @@ export default function UploadDialog({
             </>
           )}
         </div>
+
+        {fileError && (
+          <p className="text-sm text-red-600 font-medium mt-2">{fileError}</p>
+        )}
 
         <DialogFooter className="sm:justify-end">
           <Button
