@@ -9,6 +9,7 @@ from folder_operations import (
     create_item,
     delete_item,
     list_items,
+    find_files,
     copy_item,
     move_item,
     change_directory,
@@ -34,6 +35,7 @@ from action_types import ActionInfo, ActionType
 # Safe tools are read-only operations that don't modify the file system
 safe_tools = [
     list_items,
+    find_files,
     change_directory,
     add_category,
     remove_category,
@@ -162,9 +164,11 @@ def extract_tool_result(state) -> dict:
             # Content is already a dictionary
             content_dict = msg.content
 
-        # Handle file metadata updates from analyze_document
+        # Handle file metadata updates (merge, don't overwrite — supports parallel tool calls)
         if "file_metadata" in content_dict:
-            result["file_metadata"] = content_dict["file_metadata"]
+            if "file_metadata" not in result:
+                result["file_metadata"] = {}
+            result["file_metadata"].update(content_dict["file_metadata"])
 
         if "total_tokens" in content_dict:
             result["analysis_tokens"] = (
@@ -180,18 +184,23 @@ def extract_tool_result(state) -> dict:
                 result["last_affected_files"] = []
             result["last_affected_files"].extend(content_dict["affected_files"])
 
-        # Handle actions from sensitive tools
+        # Handle actions from sensitive tools — single action or batch actions list
+        action_dicts = []
         if "action" in content_dict and content_dict["action"] is not None:
+            action_dicts.append(content_dict["action"])
+        if "actions" in content_dict and isinstance(content_dict["actions"], list):
+            action_dicts.extend(a for a in content_dict["actions"] if a is not None)
+
+        for action_dict in action_dicts:
             if "actions" not in result:
                 result["actions"] = []
-            action_info = ActionInfo.from_dict(content_dict["action"])
+            action_info = ActionInfo.from_dict(action_dict)
             result["actions"].append(action_info)
 
             # When a file is renamed, re-key its metadata under the new name
             if action_info.action_type in (ActionType.RENAME_FILE, ActionType.RENAME_FOLDER) and action_info.new_name:
                 old_name = action_info.item_name
                 new_name = action_info.new_name
-                # Check both the accumulated result metadata and the existing state metadata
                 state_metadata = state.get("file_metadata", {})
                 result_metadata = result.get("file_metadata", {})
                 old_meta = result_metadata.get(old_name) or state_metadata.get(old_name)
@@ -199,7 +208,6 @@ def extract_tool_result(state) -> dict:
                     if "file_metadata" not in result:
                         result["file_metadata"] = {}
                     result["file_metadata"][new_name] = old_meta
-                    # Remove the old key from result if it was there
                     result["file_metadata"].pop(old_name, None)
 
     return result

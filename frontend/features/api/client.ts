@@ -189,6 +189,18 @@ export class ApiClient {
     );
   }
 
+  // Settings
+  async getExactMatch(): Promise<{ enabled: boolean }> {
+    return this.request<{ enabled: boolean }>("/settings/exact-match");
+  }
+
+  async setExactMatch(enabled: boolean): Promise<{ enabled: boolean }> {
+    return this.request<{ enabled: boolean }>("/settings/exact-match", {
+      method: "PUT",
+      body: JSON.stringify({ enabled }),
+    });
+  }
+
   // Health check
   async healthCheck(): Promise<{ status: string; message: string }> {
     return this.request<{ status: string; message: string }>("/");

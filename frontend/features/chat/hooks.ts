@@ -14,6 +14,7 @@ export interface ChatMessage {
   content: string;
   tokens?: number;
   timestamp: Date;
+  isError?: boolean;
   metadata?: {
     affected_files?: string[];
     last_affected_files?: string[];
@@ -170,17 +171,34 @@ export function useChat(
 
         const errorMessage =
           error instanceof Error ? error.message : "Failed to send message";
+
+        // Extract a cleaner error message from API responses
+        let displayMessage = errorMessage;
+        try {
+          // API errors come as "API request failed: 500 {"detail":"..."}"
+          const jsonMatch = errorMessage.match(/\{.*\}/);
+          if (jsonMatch) {
+            const parsed = JSON.parse(jsonMatch[0]);
+            if (parsed.detail) displayMessage = parsed.detail;
+          }
+        } catch {
+          // Use original message if parsing fails
+        }
+
+        const errorChatMessage: ChatMessage = {
+          id: (Date.now() + 1).toString(),
+          role: "assistant",
+          content: displayMessage,
+          timestamp: new Date(),
+          isError: true,
+        };
+
         setChatState((prev) => ({
           ...prev,
+          messages: [...prev.messages, errorChatMessage],
           isProcessing: false,
           error: errorMessage,
         }));
-
-        toast({
-          title: "Message Failed",
-          description: errorMessage,
-          variant: "destructive",
-        });
       } finally {
         // Stop status polling
         if (pollingRef.current) {

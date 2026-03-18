@@ -423,3 +423,25 @@ async def get_manifest(session_id: str):
 
     exporter = ScriptExporter(actions, "", working_dir)
     return exporter.generate_manifest(metadata, categories)
+
+
+# ── Settings endpoints ──
+
+
+class ExactMatchSetting(BaseModel):
+    enabled: bool
+
+
+@app.get("/settings/exact-match")
+async def get_exact_match():
+    """Get current exact match mode setting."""
+    import config
+    return {"enabled": config.ENABLE_EXACT_MATCH}
+
+
+@app.put("/settings/exact-match")
+async def set_exact_match(setting: ExactMatchSetting):
+    """Toggle exact match mode at runtime."""
+    import config
+    config.ENABLE_EXACT_MATCH = setting.enabled
+    return {"enabled": config.ENABLE_EXACT_MATCH}

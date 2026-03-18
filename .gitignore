@@ -45,3 +45,4 @@ backend/fileflow.db-shm
 backend/fileflow.db-wal
 screenshots
 perl.exe.stackdump
+debug.log

@@ -53,7 +53,22 @@
       "Bash(ls -la /c/Users/ShaiS/Documents/Repos/file-flow-ai/backend/*.py)",
       "Bash(pip show:*)",
       "Bash(pip install:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(grep -r \"@tool\" backend/*.py)",
+      "Bash(grep -r \"Union\\\\|List\\\\[\" backend/*.py)",
+      "Bash(grep -r \"Union\\\\[\" backend/*.py)",
+      "Bash(npx next:*)",
+      "Bash(ls c:/Users/ShaiS/Documents/Repos/file-flow-ai/backend/test_*)",
+      "Bash(.venv/Scripts/python -m pytest tests/test_folder_operations.py -v)",
+      "Bash(.venv/Scripts/pip install:*)",
+      "Bash(.venv/Scripts/python -m pytest tests/test_database.py -v)",
+      "Bash(.venv/Scripts/python -m pytest tests/test_integration_folder_ops.py -v -s)",
+      "Bash(.venv/Scripts/python -m pytest tests/ -v)",
+      "Bash(.venv/Scripts/pip show:*)",
+      "Bash(.venv/Scripts/python -c \"import markdownify; print\\(markdownify.__version__\\)\")",
+      "Bash(.venv/Scripts/python -c \"from markitdown import MarkItDown; md = MarkItDown\\(\\); print\\(''OK''\\)\")",
+      "Bash(ls -d c:/Users/ShaiS/Documents/Repos/file-flow-ai/backend/.venv/Lib/site-packages/~arkitdown*)",
+      "Bash(.venv/Scripts/python -c \":*)"
     ]
   }
 }

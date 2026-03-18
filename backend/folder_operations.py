@@ -105,25 +105,19 @@ def create_item(
         }
 
 
-@tool
-def copy_item(
-    working_directory: str,
-    source_path: str,
-    dest_path: str,
-) -> dict:
-    """Copy a file or folder to a new location.
+def _resolve_dest_path(dest_full_path: str, dest_path: str, source_full_path: str):
+    """If dest is an existing directory, append the source filename to move/copy into it."""
+    if os.path.exists(dest_full_path) and os.path.isdir(dest_full_path):
+        filename = os.path.basename(source_full_path)
+        dest_full_path = os.path.join(dest_full_path, filename)
+        dest_path = os.path.join(dest_path, filename)
+    return dest_full_path, dest_path
 
-    Args:
-        working_directory (str): Base directory where operations are performed
-        source_path (str): Path of the item to copy, relative to working_directory
-        dest_path (str): Destination path where item should be copied, relative to working_directory
 
-    Returns:
-        dict: Dictionary containing success/failure message and affected files
-    """
+def _copy_single_item(working_directory: str, source_path: str, dest_path: str) -> dict:
+    """Copy a single file or folder. Internal helper."""
     source_full_path = _get_full_path(working_directory, source_path)
     dest_full_path = _get_full_path(working_directory, dest_path)
-    affected_files = []
 
     if not os.path.exists(source_full_path):
         return {
@@ -133,6 +127,7 @@ def copy_item(
         }
 
     is_file = os.path.isfile(source_full_path)
+    dest_full_path, dest_path = _resolve_dest_path(dest_full_path, dest_path, source_full_path)
 
     if os.path.exists(dest_full_path):
         return {
@@ -144,53 +139,26 @@ def copy_item(
     if is_file:
         os.makedirs(os.path.dirname(dest_full_path), exist_ok=True)
         shutil.copy2(source_full_path, dest_full_path)
-        affected_files.extend([source_full_path, dest_full_path])
-        action = ActionInfo(
-            action_type=ActionType.COPY_FILE,
-            item_name=os.path.basename(source_path),
-            source_path=source_full_path,
-            target_path=dest_full_path,
-        )
-        return {
-            "message": f"Copied file from '{source_path}' to '{dest_path}'",
-            "affected_files": affected_files,
-            "action": action.to_dict(),
-        }
     else:
         shutil.copytree(source_full_path, dest_full_path)
-        affected_files.extend([source_full_path, dest_full_path])
-        action = ActionInfo(
-            action_type=ActionType.COPY_FOLDER,
-            item_name=os.path.basename(source_path),
-            source_path=source_full_path,
-            target_path=dest_full_path,
-        )
-        return {
-            "message": f"Copied folder from '{source_path}' to '{dest_path}'",
-            "affected_files": affected_files,
-            "action": action.to_dict(),
-        }
+
+    action = ActionInfo(
+        action_type=ActionType.COPY_FILE if is_file else ActionType.COPY_FOLDER,
+        item_name=os.path.basename(source_path),
+        source_path=source_full_path,
+        target_path=dest_full_path,
+    )
+    return {
+        "message": f"Copied {'file' if is_file else 'folder'} from '{source_path}' to '{dest_path}'",
+        "affected_files": [source_full_path, dest_full_path],
+        "action": action.to_dict(),
+    }
 
 
-@tool
-def move_item(
-    working_directory: str,
-    source_path: str,
-    dest_path: str,
-) -> dict:
-    """Move a file or folder to a new location.
-
-    Args:
-        working_directory (str): Base directory where operations are performed
-        source_path (str): Path of the item to move, relative to working_directory
-        dest_path (str): Destination path where item should be moved, relative to working_directory
-
-    Returns:
-        dict: Dictionary containing success/failure message and affected files
-    """
+def _move_single_item(working_directory: str, source_path: str, dest_path: str) -> dict:
+    """Move a single file or folder. Internal helper."""
     source_full_path = _get_full_path(working_directory, source_path)
     dest_full_path = _get_full_path(working_directory, dest_path)
-    affected_files = []
 
     if not os.path.exists(source_full_path):
         return {
@@ -200,6 +168,7 @@ def move_item(
         }
 
     is_file = os.path.isfile(source_full_path)
+    dest_full_path, dest_path = _resolve_dest_path(dest_full_path, dest_path, source_full_path)
 
     if os.path.exists(dest_full_path):
         return {
@@ -210,7 +179,6 @@ def move_item(
 
     os.makedirs(os.path.dirname(dest_full_path), exist_ok=True)
     shutil.move(source_full_path, dest_full_path)
-    affected_files.extend([source_full_path, dest_full_path])
 
     action = ActionInfo(
         action_type=ActionType.MOVE_FILE if is_file else ActionType.MOVE_FOLDER,
@@ -218,32 +186,16 @@ def move_item(
         source_path=source_full_path,
         target_path=dest_full_path,
     )
-
     return {
         "message": f"Moved {'file' if is_file else 'folder'} from '{source_path}' to '{dest_path}'",
-        "affected_files": affected_files,
+        "affected_files": [source_full_path, dest_full_path],
         "action": action.to_dict(),
     }
 
 
-@tool
-def delete_item(
-    working_directory: str,
-    path: str,
-    item_type: Optional[Literal["file", "folder"]] = None,
-) -> dict:
-    """Delete a file or folder from the filesystem.
-
-    Args:
-        working_directory (str): Base directory where operations are performed
-        path (str): Path of the item to delete, relative to working_directory
-        item_type (Optional[Literal["file", "folder"]]): Specify if deleting a file or folder. If None, will detect automatically
-
-    Returns:
-        dict: Dictionary containing success/failure message and affected files
-    """
+def _delete_single_item(working_directory: str, path: str, item_type: Optional[Literal["file", "folder"]] = None) -> dict:
+    """Delete a single file or folder. Internal helper."""
     full_path = _get_full_path(working_directory, path)
-    affected_files = []
 
     if not os.path.exists(full_path):
         return {
@@ -262,7 +214,6 @@ def delete_item(
             "action": None,
         }
 
-    affected_files.append(full_path)
     action = ActionInfo(
         action_type=ActionType.DELETE_FILE if is_file else ActionType.DELETE_FOLDER,
         item_name=os.path.basename(path),
@@ -271,18 +222,218 @@ def delete_item(
 
     if is_file:
         os.remove(full_path)
-        return {
-            "message": f"Deleted file '{path}'",
-            "affected_files": affected_files,
-            "action": action.to_dict(),
-        }
     else:
         shutil.rmtree(full_path)
-        return {
-            "message": f"Deleted folder '{path}' and its contents",
-            "affected_files": affected_files,
-            "action": action.to_dict(),
-        }
+
+    return {
+        "message": f"Deleted {'file' if is_file else 'folder'} '{path}'",
+        "affected_files": [full_path],
+        "action": action.to_dict(),
+    }
+
+
+def _find_matching_files(working_directory: str, name_pattern: str, path: Optional[str] = None, recursive: bool = True) -> List[str]:
+    """Find files whose names contain the pattern (case-insensitive). Returns relative paths."""
+    search_path = _get_full_path(working_directory, path)
+    if not os.path.exists(search_path):
+        return []
+    pattern_lower = name_pattern.lower()
+    matches = []
+    if recursive:
+        for root, dirs, files in os.walk(search_path):
+            for f in files:
+                if pattern_lower in f.lower():
+                    full = os.path.join(root, f)
+                    matches.append(os.path.relpath(full, working_directory))
+    else:
+        with os.scandir(search_path) as entries:
+            for entry in entries:
+                if entry.is_file() and pattern_lower in entry.name.lower():
+                    matches.append(os.path.relpath(entry.path, working_directory))
+    return sorted(matches)
+
+
+def _run_batch_operation(working_directory: str, source_paths: List[str], dest_path: str, operation_fn, create_dest_folder: bool = True) -> dict:
+    """Run a move/copy operation on multiple source paths. Returns aggregated result."""
+    all_affected = []
+    all_actions = []
+    messages = []
+    errors = []
+
+    # Auto-create dest folder if needed
+    if create_dest_folder and dest_path:
+        dest_full = _get_full_path(working_directory, dest_path)
+        if not os.path.exists(dest_full):
+            os.makedirs(dest_full)
+            all_affected.append(dest_full)
+            all_actions.append(ActionInfo(
+                action_type=ActionType.CREATE_FOLDER,
+                item_name=os.path.basename(dest_path),
+                target_path=os.path.dirname(dest_full) or dest_full,
+            ).to_dict())
+
+    for sp in source_paths:
+        result = operation_fn(working_directory, sp, dest_path)
+        all_affected.extend(result.get("affected_files", []))
+        if result.get("action"):
+            all_actions.append(result["action"])
+            messages.append(result["message"])
+        else:
+            errors.append(result["message"])
+
+    summary_parts = []
+    if messages:
+        summary_parts.append(f"Completed {len(messages)} operation(s)")
+    if errors:
+        summary_parts.append(f"{len(errors)} error(s): " + "; ".join(errors))
+
+    return {
+        "message": ". ".join(summary_parts) if summary_parts else "No operations performed",
+        "affected_files": all_affected,
+        "actions": [a for a in all_actions if a is not None],
+    }
+
+
+@tool
+def copy_item(
+    working_directory: str,
+    source_path: Union[str, List[str], None] = None,
+    dest_path: str = "",
+    name_pattern: Optional[str] = None,
+    create_dest_folder: bool = True,
+) -> dict:
+    """Copy one or more files/folders to a new location.
+
+    Args:
+        working_directory (str): Base directory where operations are performed
+        source_path: Single path (str) or list of paths to copy, relative to working_directory. Use this OR name_pattern.
+        dest_path (str): Destination path/folder, relative to working_directory
+        name_pattern (str, optional): Case-insensitive substring to match in filenames. Finds and copies all matching files. Only use when exact match mode is enabled and the user asks to operate on files by filename pattern.
+        create_dest_folder (bool): Auto-create destination folder if it doesn't exist (default True)
+
+    Returns:
+        dict: Dictionary containing success/failure message, affected files, and action(s)
+    """
+    # Resolve source paths from name_pattern or source_path
+    if name_pattern:
+        paths = _find_matching_files(working_directory, name_pattern)
+        if not paths:
+            return {"message": f"No files matching '{name_pattern}' found", "affected_files": [], "action": None}
+    elif source_path is None:
+        return {"message": "Either source_path or name_pattern must be provided", "affected_files": [], "action": None}
+    elif isinstance(source_path, str):
+        paths = [source_path]
+    else:
+        paths = source_path
+
+    # Single item: return standard format with "action" (singular)
+    if len(paths) == 1 and not name_pattern:
+        if create_dest_folder and dest_path:
+            dest_full = _get_full_path(working_directory, dest_path)
+            if not os.path.exists(dest_full):
+                os.makedirs(dest_full)
+        return _copy_single_item(working_directory, paths[0], dest_path)
+
+    # Batch: return format with "actions" (list)
+    return _run_batch_operation(working_directory, paths, dest_path, _copy_single_item, create_dest_folder)
+
+
+@tool
+def move_item(
+    working_directory: str,
+    source_path: Union[str, List[str], None] = None,
+    dest_path: str = "",
+    name_pattern: Optional[str] = None,
+    create_dest_folder: bool = True,
+) -> dict:
+    """Move one or more files/folders to a new location.
+
+    Args:
+        working_directory (str): Base directory where operations are performed
+        source_path: Single path (str) or list of paths to move, relative to working_directory. Use this OR name_pattern.
+        dest_path (str): Destination path/folder, relative to working_directory
+        name_pattern (str, optional): Case-insensitive substring to match in filenames. Finds and moves all matching files. Only use when exact match mode is enabled and the user asks to operate on files by filename pattern.
+        create_dest_folder (bool): Auto-create destination folder if it doesn't exist (default True)
+
+    Returns:
+        dict: Dictionary containing success/failure message, affected files, and action(s)
+    """
+    # Resolve source paths from name_pattern or source_path
+    if name_pattern:
+        paths = _find_matching_files(working_directory, name_pattern)
+        if not paths:
+            return {"message": f"No files matching '{name_pattern}' found", "affected_files": [], "action": None}
+    elif source_path is None:
+        return {"message": "Either source_path or name_pattern must be provided", "affected_files": [], "action": None}
+    elif isinstance(source_path, str):
+        paths = [source_path]
+    else:
+        paths = source_path
+
+    # Single item: return standard format with "action" (singular)
+    if len(paths) == 1 and not name_pattern:
+        if create_dest_folder and dest_path:
+            dest_full = _get_full_path(working_directory, dest_path)
+            if not os.path.exists(dest_full):
+                os.makedirs(dest_full)
+        return _move_single_item(working_directory, paths[0], dest_path)
+
+    # Batch: return format with "actions" (list)
+    return _run_batch_operation(working_directory, paths, dest_path, _move_single_item, create_dest_folder)
+
+
+@tool
+def delete_item(
+    working_directory: str,
+    path: Union[str, List[str], None] = None,
+    item_type: Optional[Literal["file", "folder"]] = None,
+) -> dict:
+    """Delete one or more files/folders from the filesystem.
+
+    Args:
+        working_directory (str): Base directory where operations are performed
+        path: Single path (str) or list of paths to delete, relative to working_directory
+        item_type (Optional[Literal["file", "folder"]]): Specify if deleting a file or folder. If None, will detect automatically
+
+    Returns:
+        dict: Dictionary containing success/failure message and affected files
+    """
+    if path is None:
+        return {"message": "Path must be provided", "affected_files": [], "action": None}
+
+    # Normalize to list
+    paths = [path] if isinstance(path, str) else path
+
+    # Single item: use standard format
+    if len(paths) == 1:
+        return _delete_single_item(working_directory, paths[0], item_type)
+
+    # Batch delete
+    all_affected = []
+    all_actions = []
+    messages = []
+    errors = []
+
+    for p in paths:
+        result = _delete_single_item(working_directory, p, item_type)
+        all_affected.extend(result.get("affected_files", []))
+        if result.get("action"):
+            all_actions.append(result["action"])
+            messages.append(result["message"])
+        else:
+            errors.append(result["message"])
+
+    summary_parts = []
+    if messages:
+        summary_parts.append(f"Deleted {len(messages)} item(s)")
+    if errors:
+        summary_parts.append(f"{len(errors)} error(s): " + "; ".join(errors))
+
+    return {
+        "message": ". ".join(summary_parts) if summary_parts else "No operations performed",
+        "affected_files": all_affected,
+        "actions": [a for a in all_actions if a is not None],
+    }
 
 
 @tool
@@ -368,6 +519,30 @@ def list_items(
         return f"No {item_type} found in {path if path else 'working directory'}"
 
     return "\n".join(sorted(items))
+
+
+@tool
+def find_files(
+    working_directory: str,
+    name_pattern: str,
+    path: Optional[str] = None,
+    recursive: bool = True,
+) -> str:
+    """Find files whose names contain the given pattern (case-insensitive substring match).
+
+    Args:
+        working_directory (str): Base directory where operations are performed
+        name_pattern (str): Case-insensitive substring to search for in filenames
+        path (Optional[str]): Subdirectory to search in, relative to working_directory
+        recursive (bool): Whether to search subdirectories (default True)
+
+    Returns:
+        str: Formatted list of matching file paths relative to working_directory
+    """
+    matches = _find_matching_files(working_directory, name_pattern, path, recursive)
+    if not matches:
+        return f"No files matching '{name_pattern}' found"
+    return "\n".join(f"📄 {m}" for m in matches)
 
 
 @tool

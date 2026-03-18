@@ -4,8 +4,9 @@ from langgraph.graph import StateGraph, START, END
 from langgraph.prebuilt import tools_condition
 from langchain_core.runnables import Runnable, RunnableLambda
 from langgraph.checkpoint.memory import MemorySaver
-from prompts import primary_assistant_prompt
+from prompts import primary_assistant_prompt, EXACT_MATCH_INSTRUCTIONS
 from llm import llm
+import config
 from config import WORKING_DIRECTORY
 from tools import (
     create_tool_node_with_fallback,
@@ -26,8 +27,13 @@ class Assistant:
         current_wd = state.get("working_directory", WORKING_DIRECTORY)
         # Filter messages before passing to the prompt
         filtered_state = {**state, "messages": filter_messages(state["messages"])}
+        # Conditionally inject exact match instructions based on runtime toggle
+        exact_match_text = EXACT_MATCH_INSTRUCTIONS if config.ENABLE_EXACT_MATCH else ""
         current_runnable = (
-            primary_assistant_prompt.partial(working_directory=current_wd)
+            primary_assistant_prompt.partial(
+                working_directory=current_wd,
+                exact_match_instructions=exact_match_text,
+            )
             | self.runnable
         )
 

@@ -37,6 +37,10 @@ FILTER_PROMPT_MESSAGES = True
 # Sliding window: keep last N messages in LLM context
 MESSAGE_WINDOW_SIZE = 40
 
+# Exact match mode: when enabled, the LLM can use name_pattern on move/copy tools
+# to match files by filename substring without AI reviewing each file individually
+ENABLE_EXACT_MATCH = True
+
 # Pricing per 1000 tokens (USD)
 MODEL_PRICING = {
     "anthropic.claude-3-5-sonnet-20240620-v1:0": {

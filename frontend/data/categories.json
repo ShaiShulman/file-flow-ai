@@ -56,8 +56,11 @@
     },
     {
       "id": "c34bb6bc-558f-46fa-847c-263fa061774c",
-      "name": "New Category",
-      "options": []
+      "name": "Litigation",
+      "options": [
+        "Claims letter",
+        "Litigation"
+      ]
     }
   ]
 }

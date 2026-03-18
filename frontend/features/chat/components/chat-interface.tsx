@@ -2,7 +2,7 @@
 
 import type React from "react";
 import { useState, useRef, useEffect, useCallback } from "react";
-import { StopCircle, ArrowUp, Loader2, FileText } from "lucide-react";
+import { StopCircle, ArrowUp, Loader2, FileText, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
@@ -289,10 +289,21 @@ export default function ChatInterface({
                     "flex flex-col p-3",
                     message.role === "user"
                       ? "bg-stone-100 dark:bg-stone-800 ml-auto max-w-[85%] rounded-2xl rounded-br-sm"
-                      : "bg-white dark:bg-stone-900 border border-stone-200 mr-auto max-w-[85%] rounded-2xl rounded-bl-sm"
+                      : message.isError
+                        ? "bg-red-50 dark:bg-red-950 border border-red-300 dark:border-red-800 mr-auto max-w-[85%] rounded-2xl rounded-bl-sm"
+                        : "bg-white dark:bg-stone-900 border border-stone-200 mr-auto max-w-[85%] rounded-2xl rounded-bl-sm"
                   )}
                 >
-                  <div className="whitespace-pre-wrap text-sm">
+                  {message.isError && (
+                    <div className="flex items-center gap-1.5 mb-1.5 text-red-600 dark:text-red-400">
+                      <AlertCircle className="h-4 w-4" />
+                      <span className="text-xs font-medium">Error</span>
+                    </div>
+                  )}
+                  <div className={cn(
+                    "whitespace-pre-wrap text-sm",
+                    message.isError && "text-red-700 dark:text-red-300"
+                  )}>
                     {message.role === "assistant"
                       ? parseMessageContent(message.content, onFileSelect)
                       : parseUserMessage(message.content)}

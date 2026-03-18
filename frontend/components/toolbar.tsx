@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Upload,
   Download,
@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import {
   Tooltip,
   TooltipContent,
@@ -19,6 +20,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import UploadDialog from "@/features/upload/components/upload-dialog";
+import { apiClient } from "@/features/api/client";
 import type { FolderType } from "@/lib/types";
 
 interface ToolbarProps {
@@ -37,6 +39,20 @@ export default function Toolbar({
   hasSession = false,
 }: ToolbarProps) {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [exactMatch, setExactMatch] = useState(true);
+
+  useEffect(() => {
+    apiClient.getExactMatch().then((res) => setExactMatch(res.enabled)).catch(() => {});
+  }, []);
+
+  const handleExactMatchToggle = async (checked: boolean) => {
+    setExactMatch(checked);
+    try {
+      await apiClient.setExactMatch(checked);
+    } catch {
+      setExactMatch(!checked);
+    }
+  };
 
   const handleFilesExtracted = (
     folderName: string,
@@ -105,6 +121,27 @@ export default function Toolbar({
               <FileCode className="h-3.5 w-3.5 mr-1.5" />
               Export
             </Button>
+
+            <div className="w-px h-6 bg-stone-200 mx-1" />
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-1.5">
+                  <Switch
+                    id="exact-match"
+                    checked={exactMatch}
+                    onCheckedChange={handleExactMatchToggle}
+                    className="h-5 w-9 data-[state=checked]:bg-amber-600 [&>span]:h-4 [&>span]:w-4 [&>span]:data-[state=checked]:translate-x-4"
+                  />
+                  <label htmlFor="exact-match" className="text-xs text-stone-600 cursor-pointer whitespace-nowrap">
+                    Exact Match
+                  </label>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>When enabled, filename-pattern operations match by name directly without AI reviewing each file</p>
+              </TooltipContent>
+            </Tooltip>
 
             <div className="w-px h-6 bg-stone-200 mx-1" />
 

@@ -77,9 +77,12 @@ def extract_text_from_markdown(file_path: str, path: str) -> str:
     Returns:
         str: Extracted text content
     """
-    md = MarkItDown()
-    result = md.convert(file_path)
-    return f"Content of '{path}':\n{truncate_text(result.text_content)}"
+    try:
+        md = MarkItDown()
+        result = md.convert(file_path)
+        return f"Content of '{path}':\n{truncate_text(result.text_content)}"
+    except Exception as e:
+        return f"Content of '{path}':\n[Error extracting content: {str(e)}]"
 
 
 def extract_text_from_plaintext(file_path: str, path: str) -> str:
