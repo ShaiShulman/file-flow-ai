@@ -46,27 +46,23 @@ export default function FolderItem({
   // Extract filename from a path (handles both / and \ separators)
   const getFileName = (p: string) => p.split(/[\\/]/).pop() || p;
 
-  // Check if this folder is affected
-  const isFolderAffected = affectedFiles.some((affectedPath) => {
-    const affectedName = getFileName(affectedPath);
-    const folderName = folder.name;
+  // Check if this folder is affected (by stable ID first, then fallback to path/name)
+  const isFolderAffected = affectedFiles.some((af) =>
+    af === folder.id || af === folder.path || getFileName(af) === folder.name
+  );
 
-    return (
-      affectedName === folderName ||
-      affectedPath === folderName ||
-      (folder.path && affectedPath === folder.path)
-    );
-  });
-
-  // Helper to find change type for a file/folder
-  const getChangeType = (name: string, path?: string): string | undefined => {
+  // Lookup by stable file ID first, then fallback to path/name for backwards compatibility
+  const getChangeType = (id: string, name: string, path?: string): string | undefined => {
+    if (fileChangeTypes[id]) return fileChangeTypes[id];
     if (path && fileChangeTypes[path]) return fileChangeTypes[path];
     if (fileChangeTypes[name]) return fileChangeTypes[name];
-    // Check by matching the last segment of affected paths
-    for (const [key, value] of Object.entries(fileChangeTypes)) {
-      const keyName = getFileName(key);
-      if (keyName === name) return value;
-    }
+    return undefined;
+  };
+
+  const getFileMeta = (id: string, name: string, path?: string): Record<string, any> | undefined => {
+    if (allFileMetadata[id]) return allFileMetadata[id];
+    if (path && allFileMetadata[path]) return allFileMetadata[path];
+    if (allFileMetadata[name]) return allFileMetadata[name];
     return undefined;
   };
 
@@ -87,22 +83,16 @@ export default function FolderItem({
         />
       );
     } else {
-      // Check if this file is affected by comparing paths
-      const isAffected = affectedFiles.some((affectedPath) => {
-        const affectedName = getFileName(affectedPath);
-        return (
-          affectedName === item.name ||
-          affectedPath === item.name ||
-          (item.path && affectedPath === item.path)
-        );
-      });
+      // Check if this file is affected (by stable ID first, then fallback)
+      const isAffected = affectedFiles.some((af) =>
+        af === item.id || af === item.path || getFileName(af) === item.name
+      );
 
-      const changeType = getChangeType(item.name, item.path);
-      const fileMeta = allFileMetadata[item.path] || allFileMetadata[item.name];
-      const isRecentlyAffected = recentlyAffectedFiles.some((p) => {
-        const recentName = getFileName(p);
-        return recentName === item.name || p === item.name || (item.path && p === item.path);
-      });
+      const changeType = getChangeType(item.id, item.name, item.path);
+      const fileMeta = getFileMeta(item.id, item.name, item.path);
+      const isRecentlyAffected = recentlyAffectedFiles.some((af) =>
+        af === item.id || af === item.path || getFileName(af) === item.name
+      );
 
       return (
         <FileItem

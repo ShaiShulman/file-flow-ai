@@ -7,6 +7,9 @@ import os
 from agent_runner import AgentRunner, RunResult
 from action_types import ActionInfo
 from database import db
+from file_registry import FileRegistry
+
+file_registry = FileRegistry(db)
 
 
 class UserInput(BaseModel):
@@ -38,6 +41,7 @@ class AgentResponse(BaseModel):
     file_metadata: Dict[str, Any]
     categories: Dict[str, Any]
     message_stats: Optional[MessageStats] = None
+    file_id_map: Dict[str, str] = {}  # path -> stable file ID
 
 
 class AgentAPI:
@@ -76,10 +80,13 @@ class AgentAPI:
                 else self.default_working_directory
             )
             self.sessions[session_id] = AgentRunner(
-                working_directory=wd, debug=self.debug
+                working_directory=wd, debug=self.debug, session_id=session_id
             )
             # Persist session to database
             db.create_session(session_id, wd)
+            # Register all existing files with stable IDs
+            if os.path.isdir(wd):
+                file_registry.scan_and_register(session_id, wd)
         elif working_directory:
             # Always update working directory if provided (to ensure session-specific directory is used)
             self.sessions[session_id].working_directory = working_directory
@@ -163,11 +170,28 @@ class AgentAPI:
                     db.save_file_metadata(session_id, action_dict["new_name"], old_meta)
                     db.delete_file_metadata(session_id, action_dict["item_name"])
 
-        # Persist file metadata updates
+        # Update file registry based on actions
+        action_dicts = [action.to_dict() for action in result.actions]
+        file_registry.process_actions(session_id, action_dicts, agent.working_directory)
+
+        # Persist file metadata updates (keyed by both path and file ID)
         if agent.file_metadata:
             for file_path, metadata in agent.file_metadata.items():
                 if isinstance(metadata, dict):
                     db.save_file_metadata(session_id, file_path, metadata)
+                    # Also store by filename so frontend can retrieve by name
+                    filename = os.path.basename(file_path)
+                    if filename != file_path:
+                        db.save_file_metadata(session_id, filename, metadata)
+                    # Also store by stable file ID
+                    file_id = file_registry.get_id_for_path(session_id, file_path)
+                    if file_id:
+                        db.save_file_metadata(session_id, file_id, metadata)
+
+        # Build file_id_map for all affected paths
+        all_paths = set(agent.affected_files) | set(result.last_affected_files)
+        id_map = file_registry.get_id_map(session_id)
+        file_id_map = {path: id_map[path] for path in all_paths if path in id_map}
 
         return AgentResponse(
             message=result.result_message,
@@ -176,10 +200,11 @@ class AgentAPI:
             last_affected_files=[f for f in result.last_affected_files if os.path.isfile(f)],
             analysis_tokens=result.analysis_tokens,
             instruction_tokens=result.instruction_tokens,
-            actions=[action.to_dict() for action in result.actions],
+            actions=action_dicts,
             file_metadata=agent.file_metadata,
             categories=result.state.get("categories", {}),
             message_stats=message_stats,
+            file_id_map=file_id_map,
         )
 
     def delete_session(self, session_id: str) -> bool:

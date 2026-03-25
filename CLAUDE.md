@@ -147,6 +147,42 @@ UI built with **shadcn/ui** (Radix primitives + Tailwind CSS). Components in [co
 - Zero context switching required from the user
 - Go fix failing CI tests without being told how
 
+## Testing Requirements
+
+Every feature or non-trivial change **must** include tests. This is not optional.
+
+### What to write
+
+1. **Unit tests** — Test the new code in isolation using temp databases and temp filesystems. Place in `backend/tests/test_<feature>.py`. Follow the existing pattern: `@pytest.fixture` for temp DB, class-based test grouping, descriptive test names.
+
+2. **Live server integration tests** — Test the feature end-to-end against the running backend over HTTP. Place in `backend/tests/test_<feature>_live.py`. These should:
+   - Use `requests` to call actual API endpoints
+   - Auto-detect the server URL from `SERVER_URL` env var (default `http://localhost:8000`)
+   - Skip gracefully if the server is unreachable
+   - Auto-discover a valid session from the database (don't hardcode session IDs)
+   - Clean up any test artifacts (temp files, test data) via fixtures
+   - Include a smoke test group verifying existing endpoints still work
+
+3. **Frontend build verification** — Run `pnpm build` after frontend changes to catch type errors and broken imports.
+
+### Test structure to follow
+
+- **Group tests by concern** using classes: `TestFeatureX`, `TestEdgeCases`, `TestExistingFeaturesNotBroken`
+- **Cover the happy path, error handling, edge cases, and backwards compatibility**
+- **Test stability/idempotency** — call the same endpoint twice and assert consistent results where applicable
+- **Test isolation** — verify data from one session/context doesn't leak into another
+
+### Running tests
+
+```bash
+cd backend
+py -3 tests/run_all_tests.py              # all unit + live server tests
+py -3 tests/run_all_tests.py --skip-live   # unit tests only
+py -3 -m pytest tests/test_<file>.py -v    # single test file
+```
+
+When adding a new test file, also add it to `tests/run_all_tests.py` so it runs in the full suite.
+
 ## Task Management
 
 1. **Plan First**: Write plan to `tasks/todo.md` with checkable items

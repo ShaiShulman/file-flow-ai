@@ -30,10 +30,17 @@ export interface ChatMessage {
   };
 }
 
+export interface ProgressInfo {
+  current: number;
+  total: number;
+  current_file: string;
+}
+
 export interface ChatState {
   messages: ChatMessage[];
   isProcessing: boolean;
   currentAction: string;
+  progress: ProgressInfo | null;
   error: string | null;
   totalTokens: number;
 }
@@ -42,12 +49,13 @@ export function useChat(
   sessionId: string | null,
   updateAffectedFiles?: (files: string[], lastAffectedFiles?: string[]) => void,
   onFolderStructureChange?: (affectedFiles?: string[], lastAffectedFiles?: string[]) => void,
-  onResponseData?: (data: { actions: Array<Record<string, any>>; file_metadata: Record<string, any> }) => void
+  onResponseData?: (data: { actions: Array<Record<string, any>>; file_metadata: Record<string, any>; file_id_map?: Record<string, string> }) => void
 ) {
   const [chatState, setChatState] = useState<ChatState>({
     messages: [],
     isProcessing: false,
     currentAction: "",
+    progress: null,
     error: null,
     totalTokens: 0,
   });
@@ -86,16 +94,15 @@ export function useChat(
       // Create abort controller for this request
       abortControllerRef.current = new AbortController();
 
-      // Start polling for agent status
+      // Start polling for agent status and progress
       pollingRef.current = setInterval(async () => {
         try {
           const status = await apiClient.getSessionStatus(sessionId);
-          if (status.current_action) {
-            setChatState((prev) => ({
-              ...prev,
-              currentAction: status.current_action,
-            }));
-          }
+          setChatState((prev) => ({
+            ...prev,
+            currentAction: status.current_action || prev.currentAction,
+            progress: status.progress || null,
+          }));
         } catch {
           // Polling failure is non-critical, ignore
         }
@@ -129,39 +136,45 @@ export function useChat(
         setChatState((prev) => ({
           ...prev,
           messages: [...prev.messages, assistantMessage],
-          isProcessing: false,
           totalTokens:
             prev.totalTokens +
             (response.analysis_tokens + response.instruction_tokens),
         }));
 
-        // Send actions and metadata to parent for file explorer updates
-        if (onResponseData && (response.actions.length > 0 || Object.keys(response.file_metadata).length > 0)) {
-          onResponseData({
-            actions: response.actions,
-            file_metadata: response.file_metadata,
-          });
-        }
+        // Post-processing: update file explorer, trigger rescans, show toast
+        // Wrapped in try/catch so a callback error doesn't mask the successful response
+        try {
+          // Send actions and metadata to parent for file explorer updates
+          if (onResponseData && (response.actions.length > 0 || Object.keys(response.file_metadata).length > 0)) {
+            onResponseData({
+              actions: response.actions,
+              file_metadata: response.file_metadata,
+              file_id_map: response.file_id_map,
+            });
+          }
 
-        // Update session affected files if callback provided
-        if (updateAffectedFiles && response.affected_files.length > 0) {
-          updateAffectedFiles(response.affected_files, response.last_affected_files);
-        }
+          // Update session affected files if callback provided
+          if (updateAffectedFiles && response.affected_files.length > 0) {
+            updateAffectedFiles(response.affected_files, response.last_affected_files);
+          }
 
-        // Trigger folder structure rescan if files were affected
-        if (onFolderStructureChange && response.affected_files.length > 0) {
-          onFolderStructureChange(response.affected_files, response.last_affected_files);
-        }
+          // Trigger folder structure rescan if files were affected
+          if (onFolderStructureChange && response.affected_files.length > 0) {
+            onFolderStructureChange(response.affected_files, response.last_affected_files);
+          }
 
-        // Show success toast if files were affected
-        if (response.last_affected_files.length > 0) {
-          const uniqueCount = new Set(
-            response.last_affected_files.map((p) => p.split(/[\\/]/).pop() || p)
-          ).size;
-          toast({
-            title: "Files Updated",
-            description: `${uniqueCount} file(s) were modified`,
-          });
+          // Show success toast if files were affected
+          if (response.last_affected_files.length > 0) {
+            const uniqueCount = new Set(
+              response.last_affected_files.map((p) => p.split(/[\\/]/).pop() || p)
+            ).size;
+            toast({
+              title: "Files Updated",
+              description: `${uniqueCount} file(s) were modified`,
+            });
+          }
+        } catch (processingError) {
+          console.error("Error processing response callbacks:", processingError);
         }
       } catch (error) {
         if (error instanceof Error && error.name === "AbortError") {
@@ -196,16 +209,15 @@ export function useChat(
         setChatState((prev) => ({
           ...prev,
           messages: [...prev.messages, errorChatMessage],
-          isProcessing: false,
           error: errorMessage,
         }));
       } finally {
-        // Stop status polling
+        // Stop status polling and reset processing state
         if (pollingRef.current) {
           clearInterval(pollingRef.current);
           pollingRef.current = null;
         }
-        setChatState((prev) => ({ ...prev, currentAction: "" }));
+        setChatState((prev) => ({ ...prev, currentAction: "", progress: null, isProcessing: false }));
         abortControllerRef.current = null;
       }
     },

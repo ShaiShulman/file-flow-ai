@@ -46,6 +46,8 @@ function getChangeIndicator(changeType?: string) {
     return { dot: "bg-amber-500", bg: "bg-amber-50 dark:bg-amber-900/20", label: "Moved" };
   if (changeType.includes("rename") || changeType.includes("modify"))
     return { dot: "bg-blue-500", bg: "bg-blue-50 dark:bg-blue-900/20", label: "Modified" };
+  if (changeType.includes("analyze"))
+    return { dot: "bg-indigo-500", bg: "bg-indigo-50 dark:bg-indigo-900/20", label: "Analyzed" };
   return null;
 }
 

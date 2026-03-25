@@ -13,7 +13,7 @@ import type { FileType, FolderType } from "@/lib/types";
 import { downloadFolderAsZip } from "@/lib/actions/folder-manager";
 import { SessionProvider, useSessionContext } from "@/features/session/context";
 import { rescanFolderStructure } from "@/lib/utils/folder-utils";
-import { apiClient } from "@/features/api/client";
+import { apiClient, type AgentResponse } from "@/features/api/client";
 import ExportDialog from "@/features/export/components/export-dialog";
 import {
   ResizablePanelGroup,
@@ -79,15 +79,20 @@ function HomeContent() {
           const match = workingDirectory.match(/extracted_(.+)$/);
           const folderId = match ? match[1] : urlSessionId;
 
-          // Rescan folder structure
-          const folderStructure = await rescanFolderStructure(folderId);
+          // Ensure backend agent is alive (idempotent create)
+          await apiClient.createSession(folderId, workingDirectory);
+
+          // Fetch folder structure from backend (stable IDs) with fallback to local scan
+          let folderStructure;
+          try {
+            folderStructure = await apiClient.getFolderStructure(folderId);
+          } catch {
+            folderStructure = await rescanFolderStructure(folderId);
+          }
           if (folderStructure) {
             setCurrentFolder(folderStructure);
             setCurrentFolderId(folderId);
           }
-
-          // Ensure backend agent is alive (idempotent create)
-          await apiClient.createSession(folderId, workingDirectory);
         } catch {
           // Session not found or restoration failed — clear URL param
           router.replace("/");
@@ -124,23 +129,56 @@ function HomeContent() {
   };
 
   // Handle actions and metadata from agent responses for file explorer indicators
-  const handleResponseData = (data: { actions: Array<Record<string, any>>; file_metadata: Record<string, any> }) => {
-    if (data.actions.length > 0) {
-      const changeTypes: Record<string, string> = {};
-      for (const action of data.actions) {
+  const handleResponseData = (data: {
+    actions: Array<Record<string, any>>;
+    file_metadata: Record<string, any>;
+    file_id_map?: Record<string, string>;
+  }) => {
+    const fileIdMap = data.file_id_map || {};
+    const changeTypes: Record<string, string> = {};
+
+    for (const action of data.actions) {
+      const actionType = action.action_type || "";
+      if (!actionType) continue;
+
+      // Try to resolve a stable file ID for this action
+      const actionPath = action.target_path || action.source_path || "";
+      const fileId = fileIdMap[actionPath];
+      if (fileId) {
+        changeTypes[fileId] = actionType;
+      } else {
+        // Fallback: use path/name for backwards compatibility
         const path = action.item_path || action.item_name || "";
-        const actionType = action.action_type || "";
-        if (path && actionType) {
-          changeTypes[path] = actionType;
-        }
-      }
-      if (Object.keys(changeTypes).length > 0) {
-        updateFileChangeTypes(changeTypes);
+        if (path) changeTypes[path] = actionType;
       }
     }
 
-    if (Object.keys(data.file_metadata).length > 0) {
-      updateAllFileMetadata(data.file_metadata);
+    // Mark metadata-only changes as "analyze" type, keyed by file ID when possible
+    for (const filePath of Object.keys(data.file_metadata)) {
+      const fileId = fileIdMap[filePath];
+      const key = fileId || filePath;
+      if (!changeTypes[key]) {
+        changeTypes[key] = "analyze";
+      }
+    }
+
+    if (Object.keys(changeTypes).length > 0) {
+      updateFileChangeTypes(changeTypes);
+    }
+
+    // Store metadata keyed by file ID when available
+    const idKeyedMetadata: Record<string, Record<string, any>> = {};
+    for (const [filePath, meta] of Object.entries(data.file_metadata)) {
+      const fileId = fileIdMap[filePath];
+      if (fileId) {
+        idKeyedMetadata[fileId] = meta as Record<string, any>;
+      }
+      // Also keep path-keyed for backwards compatibility
+      idKeyedMetadata[filePath] = meta as Record<string, any>;
+    }
+
+    if (Object.keys(idKeyedMetadata).length > 0) {
+      updateAllFileMetadata(idKeyedMetadata);
     }
   };
 
@@ -167,7 +205,19 @@ function HomeContent() {
     if (!currentFolderId) return;
 
     try {
-      const updatedStructure = await rescanFolderStructure(currentFolderId);
+      // Prefer backend API for folder structure (stable IDs)
+      let updatedStructure: FolderType | null = null;
+      if (sessionState.sessionId) {
+        try {
+          updatedStructure = await apiClient.getFolderStructure(sessionState.sessionId);
+        } catch {
+          // Backend unavailable, fall back to filesystem scan
+          console.warn("Backend folder-structure unavailable, falling back to local rescan");
+        }
+      }
+      if (!updatedStructure) {
+        updatedStructure = await rescanFolderStructure(currentFolderId);
+      }
 
       if (updatedStructure) {
         setCurrentFolder(updatedStructure);

@@ -126,14 +126,18 @@ export default function FileExplorer({
   // Extract filename from a path (handles both / and \ separators)
   const getFileName = (p: string) => p.split(/[\\/]/).pop() || p;
 
-  // Helper to get change type for a file
-  const getChangeType = (name: string, path?: string): string | undefined => {
+  // Lookup by stable file ID first, then fallback to path/name for backwards compatibility
+  const getChangeType = (id: string, name: string, path?: string): string | undefined => {
+    if (fileChangeTypes[id]) return fileChangeTypes[id];
     if (path && fileChangeTypes[path]) return fileChangeTypes[path];
     if (fileChangeTypes[name]) return fileChangeTypes[name];
-    for (const [key, value] of Object.entries(fileChangeTypes)) {
-      const keyName = getFileName(key);
-      if (keyName === name) return value;
-    }
+    return undefined;
+  };
+
+  const getFileMeta = (id: string, name: string, path?: string): Record<string, any> | undefined => {
+    if (allFileMetadata[id]) return allFileMetadata[id];
+    if (path && allFileMetadata[path]) return allFileMetadata[path];
+    if (allFileMetadata[name]) return allFileMetadata[name];
     return undefined;
   };
 
@@ -184,16 +188,14 @@ export default function FileExplorer({
             />
           );
         } else {
-          const isAffected = affectedFiles.some((p) => {
-            const affectedName = getFileName(p);
-            return affectedName === child.name || p === child.name || (child.path && p === child.path);
-          });
-          const changeType = getChangeType(child.name, child.path);
-          const fileMeta = allFileMetadata[child.path] || allFileMetadata[child.name];
-          const isRecentlyAffected = recentlyAffectedFiles.some((p) => {
-            const recentName = getFileName(p);
-            return recentName === child.name || p === child.name || (child.path && p === child.path);
-          });
+          const isAffected = affectedFiles.some((af) =>
+            af === child.id || af === child.path || getFileName(af) === child.name
+          );
+          const changeType = getChangeType(child.id, child.name, child.path);
+          const fileMeta = getFileMeta(child.id, child.name, child.path);
+          const isRecentlyAffected = recentlyAffectedFiles.some((af) =>
+            af === child.id || af === child.path || getFileName(af) === child.name
+          );
 
           return (
             <FileItem

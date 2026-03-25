@@ -6,7 +6,7 @@ import uuid
 import os
 from typing import Dict, Any, List, Optional
 
-from api_server import AgentAPI, UserInput, AgentResponse
+from api_server import AgentAPI, UserInput, AgentResponse, file_registry
 from categories import categories_manager
 from path_utils import get_session_working_directory
 from database import db
@@ -269,13 +269,36 @@ async def reset_categories(categories: Dict[str, List[str]]):
 @app.get("/sessions/{session_id}/status")
 async def get_session_status(session_id: str):
     """Get current agent processing status for live polling."""
+    from progress import get_progress
+
     if session_id not in agent_api.sessions:
-        return {"status": "idle", "current_action": ""}
+        return {"status": "idle", "current_action": "", "progress": None}
 
     agent = agent_api.sessions[session_id]
+    progress = get_progress(session_id) if agent.is_processing else None
     if agent.is_processing:
-        return {"status": "processing", "current_action": agent.current_status}
-    return {"status": "idle", "current_action": ""}
+        return {"status": "processing", "current_action": agent.current_status, "progress": progress}
+    return {"status": "idle", "current_action": "", "progress": None}
+
+
+# ── Folder Structure endpoint ──
+
+
+@app.get("/sessions/{session_id}/folder-structure")
+async def get_folder_structure(session_id: str):
+    """Get the folder structure with stable file IDs for the session's working directory."""
+    session = db.get_session(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail=f"Session {session_id} not found")
+
+    working_directory = session["working_directory"]
+    if not os.path.isdir(working_directory):
+        raise HTTPException(status_code=404, detail="Working directory not found on disk")
+
+    tree = await asyncio.to_thread(
+        file_registry.build_annotated_tree, session_id, working_directory
+    )
+    return tree
 
 
 # ── Action History endpoints ──

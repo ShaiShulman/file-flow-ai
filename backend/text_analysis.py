@@ -57,7 +57,10 @@ class TextAnalyzer:
         self.categories_manager = categories_manager
 
     def invoke_model(self, prompt: str) -> tuple[str, int]:
-        """Invoke the Bedrock model with the given prompt.
+        """Invoke the Bedrock model with the given prompt using the Converse API.
+
+        Uses the model-agnostic Converse API so any Bedrock model (Anthropic,
+        Amazon Nova, Titan, etc.) works without format-specific request bodies.
 
         Args:
             prompt (str): The prompt to send to the model
@@ -69,30 +72,25 @@ class TextAnalyzer:
             print("\033[38;5;208m=== PROMPT ===\n" + prompt + "\n=============\033[0m")
 
         try:
-            response = self.client.invoke_model(
+            response = self.client.converse(
                 modelId=self.model_id,
-                contentType="application/json",
-                accept="application/json",
-                body=json.dumps(
+                messages=[
                     {
-                        "anthropic_version": "bedrock-2023-05-31",
-                        "max_tokens": 4096,
-                        "messages": [
-                            {
-                                "role": "user",
-                                "content": [{"type": "text", "text": prompt}],
-                            }
-                        ],
+                        "role": "user",
+                        "content": [{"text": prompt}],
                     }
-                ),
+                ],
+                inferenceConfig={"maxTokens": 4096},
             )
 
-            response_body = json.loads(response.get("body").read())
-            response_text = response_body.get("content", [{}])[0].get("text", "")
-            usage = response_body.get("usage", {})
+            # Extract response text from Converse API format
+            output = response.get("output", {})
+            message = output.get("message", {})
+            content_blocks = message.get("content", [])
+            response_text = content_blocks[0].get("text", "") if content_blocks else ""
 
-            # Calculate total tokens
-            total_tokens = usage.get("input_tokens", 0) + usage.get("output_tokens", 0)
+            usage = response.get("usage", {})
+            total_tokens = usage.get("inputTokens", 0) + usage.get("outputTokens", 0)
 
             if DEBUG_LLM:
                 print(
@@ -399,11 +397,12 @@ def analyze_document(
         "summary": summary,
     }
 
-    # Filter out fields that already exist in metadata
+    # Filter out fields that already have meaningful values in metadata
+    # "N/A" values are treated as unresolved and should be re-analyzed
     fields_to_analyze = {
         field: requested
         for field, requested in fields_to_analyze.items()
-        if requested and field not in existing_metadata
+        if requested and (field not in existing_metadata or existing_metadata.get(field) == "N/A")
     }
 
     # Check if we need to analyze anything
@@ -458,6 +457,10 @@ def analyze_document(
         # Invoke the model with the combined prompt
         response, total_tokens = analyzer.invoke_model(prompt)
 
+        # If the model call failed (0 tokens and error message), return the error
+        if total_tokens == 0 and response.startswith("Error"):
+            return {"message": response, "file_metadata": {}, "total_tokens": 0}
+
         # Parse the response to extract information from XML tags
         new_results = analyzer.parse_response(
             response,
@@ -493,8 +496,16 @@ def analyze_document(
     # Create the metadata update
     metadata_update = {file_path: results}
 
+    # Mark the file as affected so it gets highlighted in the file explorer
+    full_path = os.path.join(working_directory, file_path)
+
+    # Increment progress for multi-file batch operations
+    from progress import increment_progress
+    increment_progress(os.path.basename(file_path))
+
     return {
         "message": "Document analyzed successfully",
         "file_metadata": metadata_update,
         "total_tokens": total_tokens,
+        "affected_files": [full_path],
     }

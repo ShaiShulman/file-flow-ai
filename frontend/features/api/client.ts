@@ -23,6 +23,7 @@ export interface AgentResponse {
   file_metadata: Record<string, any>;
   categories: Record<string, any>;
   message_stats?: MessageStats;
+  file_id_map: Record<string, string>; // path -> stable file ID
 }
 
 export interface TokenStats {
@@ -117,9 +118,24 @@ export class ApiClient {
 
   async getSessionStatus(
     sessionId: string
-  ): Promise<{ status: string; current_action: string }> {
-    return this.request<{ status: string; current_action: string }>(
-      `/sessions/${sessionId}/status`
+  ): Promise<{
+    status: string;
+    current_action: string;
+    progress: { current: number; total: number; current_file: string } | null;
+  }> {
+    return this.request<{
+      status: string;
+      current_action: string;
+      progress: { current: number; total: number; current_file: string } | null;
+    }>(`/sessions/${sessionId}/status`);
+  }
+
+  // Folder structure with stable IDs
+  async getFolderStructure(
+    sessionId: string
+  ): Promise<import("@/lib/types").FolderType> {
+    return this.request<import("@/lib/types").FolderType>(
+      `/sessions/${sessionId}/folder-structure`
     );
   }
 

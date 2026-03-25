@@ -1,8 +1,9 @@
 import sqlite3
 import json
 import os
+import uuid
 import threading
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, Tuple
 from datetime import datetime
 
 
@@ -102,11 +103,25 @@ class Database:
                 created_at TEXT NOT NULL DEFAULT (datetime('now'))
             );
 
+            CREATE TABLE IF NOT EXISTS file_registry (
+                id TEXT NOT NULL,
+                session_id TEXT NOT NULL,
+                file_path TEXT NOT NULL,
+                item_type TEXT NOT NULL,
+                is_deleted INTEGER DEFAULT 0,
+                created_at TEXT NOT NULL DEFAULT (datetime('now')),
+                updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+                PRIMARY KEY (session_id, id),
+                FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
+            );
+
             CREATE INDEX IF NOT EXISTS idx_messages_session ON messages(session_id);
             CREATE INDEX IF NOT EXISTS idx_actions_session ON actions(session_id);
             CREATE INDEX IF NOT EXISTS idx_file_metadata_session ON file_metadata(session_id);
             CREATE INDEX IF NOT EXISTS idx_file_metadata_path ON file_metadata(session_id, file_path);
             CREATE INDEX IF NOT EXISTS idx_metadata_fields_session ON metadata_fields(session_id);
+            CREATE INDEX IF NOT EXISTS idx_file_registry_session_path ON file_registry(session_id, file_path);
+            CREATE INDEX IF NOT EXISTS idx_file_registry_session_active ON file_registry(session_id, is_deleted);
         """)
         self.conn.commit()
 
@@ -336,6 +351,141 @@ class Database:
         with self._lock:
             self.conn.execute("DELETE FROM categories")
             self.conn.commit()
+
+    # ── File registry methods ──
+
+    def register_file(self, session_id: str, file_path: str, item_type: str) -> str:
+        """Register a file/folder and return its stable ID. Returns existing ID if already registered."""
+        with self._lock:
+            row = self.conn.execute(
+                "SELECT id FROM file_registry WHERE session_id = ? AND file_path = ? AND is_deleted = 0",
+                (session_id, file_path),
+            ).fetchone()
+            if row:
+                return row["id"]
+            file_id = str(uuid.uuid4())
+            self.conn.execute(
+                """INSERT INTO file_registry (id, session_id, file_path, item_type)
+                   VALUES (?, ?, ?, ?)""",
+                (file_id, session_id, file_path, item_type),
+            )
+            self.conn.commit()
+        return file_id
+
+    def get_id_by_path(self, session_id: str, file_path: str) -> Optional[str]:
+        """Get the stable ID for a file path."""
+        row = self.conn.execute(
+            "SELECT id FROM file_registry WHERE session_id = ? AND file_path = ? AND is_deleted = 0",
+            (session_id, file_path),
+        ).fetchone()
+        return row["id"] if row else None
+
+    def get_path_by_id(self, session_id: str, file_id: str) -> Optional[str]:
+        """Get the current path for a file ID."""
+        row = self.conn.execute(
+            "SELECT file_path FROM file_registry WHERE session_id = ? AND id = ? AND is_deleted = 0",
+            (session_id, file_id),
+        ).fetchone()
+        return row["file_path"] if row else None
+
+    def update_file_path(self, session_id: str, file_id: str, new_path: str) -> bool:
+        """Update the path for a registered file (move/rename)."""
+        with self._lock:
+            cursor = self.conn.execute(
+                "UPDATE file_registry SET file_path = ?, updated_at = datetime('now') WHERE session_id = ? AND id = ? AND is_deleted = 0",
+                (new_path, session_id, file_id),
+            )
+            self.conn.commit()
+        return cursor.rowcount > 0
+
+    def update_file_paths_by_prefix(self, session_id: str, old_prefix: str, new_prefix: str) -> int:
+        """Update all file paths that start with old_prefix to use new_prefix (for folder moves)."""
+        with self._lock:
+            rows = self.conn.execute(
+                "SELECT id, file_path FROM file_registry WHERE session_id = ? AND is_deleted = 0 AND file_path LIKE ?",
+                (session_id, old_prefix + "%"),
+            ).fetchall()
+            count = 0
+            for row in rows:
+                new_path = new_prefix + row["file_path"][len(old_prefix):]
+                self.conn.execute(
+                    "UPDATE file_registry SET file_path = ?, updated_at = datetime('now') WHERE session_id = ? AND id = ?",
+                    (new_path, session_id, row["id"]),
+                )
+                count += 1
+            self.conn.commit()
+        return count
+
+    def mark_file_deleted(self, session_id: str, file_path: str) -> bool:
+        """Soft-delete a file registry entry."""
+        with self._lock:
+            cursor = self.conn.execute(
+                "UPDATE file_registry SET is_deleted = 1, updated_at = datetime('now') WHERE session_id = ? AND file_path = ? AND is_deleted = 0",
+                (session_id, file_path),
+            )
+            self.conn.commit()
+        return cursor.rowcount > 0
+
+    def bulk_register(self, session_id: str, items: List[Tuple[str, str]]) -> Dict[str, str]:
+        """Register multiple files/folders at once. Returns {path: id} map."""
+        result = {}
+        with self._lock:
+            # Get all existing entries for this session
+            existing = {}
+            rows = self.conn.execute(
+                "SELECT id, file_path FROM file_registry WHERE session_id = ? AND is_deleted = 0",
+                (session_id,),
+            ).fetchall()
+            for row in rows:
+                existing[row["file_path"]] = row["id"]
+
+            for file_path, item_type in items:
+                if file_path in existing:
+                    result[file_path] = existing[file_path]
+                else:
+                    file_id = str(uuid.uuid4())
+                    self.conn.execute(
+                        "INSERT INTO file_registry (id, session_id, file_path, item_type) VALUES (?, ?, ?, ?)",
+                        (file_id, session_id, file_path, item_type),
+                    )
+                    result[file_path] = file_id
+            self.conn.commit()
+        return result
+
+    def get_file_registry(self, session_id: str) -> List[dict]:
+        """Get all active registry entries for a session."""
+        rows = self.conn.execute(
+            "SELECT id, file_path, item_type, created_at, updated_at FROM file_registry WHERE session_id = ? AND is_deleted = 0",
+            (session_id,),
+        ).fetchall()
+        return [dict(r) for r in rows]
+
+    def get_file_id_map(self, session_id: str) -> Dict[str, str]:
+        """Get {path: id} map for all active files in a session."""
+        rows = self.conn.execute(
+            "SELECT id, file_path FROM file_registry WHERE session_id = ? AND is_deleted = 0",
+            (session_id,),
+        ).fetchall()
+        return {r["file_path"]: r["id"] for r in rows}
+
+    def reconcile_registry(self, session_id: str, live_paths: set) -> Dict[str, str]:
+        """Reconcile registry with actual filesystem. Marks missing files as deleted, returns current {path: id} map."""
+        with self._lock:
+            rows = self.conn.execute(
+                "SELECT id, file_path FROM file_registry WHERE session_id = ? AND is_deleted = 0",
+                (session_id,),
+            ).fetchall()
+            current_map = {}
+            for row in rows:
+                if row["file_path"] not in live_paths:
+                    self.conn.execute(
+                        "UPDATE file_registry SET is_deleted = 1, updated_at = datetime('now') WHERE session_id = ? AND id = ?",
+                        (session_id, row["id"]),
+                    )
+                else:
+                    current_map[row["file_path"]] = row["id"]
+            self.conn.commit()
+        return current_map
 
     # ── Stats/analytics ──
 

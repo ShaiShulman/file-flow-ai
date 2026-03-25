@@ -22,15 +22,17 @@ class RunResult:
 
 
 class AgentRunner:
-    def __init__(self, working_directory: str, debug: bool = False):
+    def __init__(self, working_directory: str, debug: bool = False, session_id: str = ""):
         """Initialize the AgentRunner with a working directory and debug flag.
 
         Args:
             working_directory (str): The initial working directory
             debug (bool): Whether to print debug information
+            session_id (str): The session ID for progress tracking
         """
         self.working_directory = working_directory
         self.debug = debug
+        self.session_id = session_id
         self.affected_files = []
         self.last_affected_files = []
         self.file_metadata = {}
@@ -71,6 +73,11 @@ class AgentRunner:
         self.is_processing = True
         self.current_status = "Thinking..."
 
+        # Set session context for progress tracking in tool worker threads
+        if self.session_id:
+            from progress import set_session_context
+            set_session_context(self.session_id)
+
         events = self.agent.stream(
             {
                 "messages": [("user", user_input)],
@@ -99,6 +106,15 @@ class AgentRunner:
                     last_msg = event["messages"][-1]
                     msg_type = last_msg.__class__.__name__ if hasattr(last_msg, "__class__") else type(last_msg).__name__
                     if msg_type == "AIMessage" and hasattr(last_msg, "tool_calls") and last_msg.tool_calls:
+                        # Start progress tracking for multi-file batch operations
+                        num_tool_calls = len(last_msg.tool_calls)
+                        if num_tool_calls > 1 and self.session_id:
+                            from progress import start_progress
+                            first_call = last_msg.tool_calls[0]
+                            first_args = first_call.get("args", {})
+                            label = first_args.get("file_path", first_call.get("name", ""))
+                            start_progress(self.session_id, num_tool_calls, label.split("/")[-1] if label else "")
+
                         tool_call = last_msg.tool_calls[-1]
                         tool_name = tool_call.get("name", "")
                         tool_args = tool_call.get("args", {})
@@ -173,6 +189,11 @@ class AgentRunner:
 
         self.is_processing = False
         self.current_status = ""
+
+        # Clear progress tracking
+        if self.session_id:
+            from progress import clear_progress
+            clear_progress(self.session_id)
 
         if last_event:
             # Update working directory if it changed during execution

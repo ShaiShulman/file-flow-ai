@@ -353,11 +353,31 @@ export default function ChatInterface({
                     <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
                     <span className="text-sm text-muted-foreground">Processing your request...</span>
                   </div>
-                  {chatState.currentAction && (
+                  {chatState.progress && chatState.progress.total > 1 ? (
+                    <div className="mt-2 pl-6 space-y-1.5">
+                      <div className="w-full h-1.5 bg-stone-200 dark:bg-stone-700 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-blue-500 rounded-full transition-all duration-300"
+                          style={{ width: `${Math.min(100, Math.round((chatState.progress.current / chatState.progress.total) * 100))}%` }}
+                        />
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        <span>Processing file </span>
+                        <span className="font-medium tabular-nums">{chatState.progress.current}/{chatState.progress.total}</span>
+                        {chatState.progress.current_file && (
+                          <span title={chatState.progress.current_file}>
+                            : {chatState.progress.current_file.length > 35
+                              ? chatState.progress.current_file.slice(0, 32) + "..."
+                              : chatState.progress.current_file}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ) : chatState.currentAction ? (
                     <div className="mt-1.5 text-xs text-muted-foreground/70 pl-6">
                       {chatState.currentAction}
                     </div>
-                  )}
+                  ) : null}
                 </div>
               )}
 
@@ -392,24 +412,25 @@ export default function ChatInterface({
             onPaste={handlePaste}
             suppressContentEditableWarning
           />
-          <div className="absolute right-2 top-0 bottom-0 flex items-center gap-1">
+          <div className="absolute right-2 bottom-2 flex items-center gap-1">
             {chatState.isProcessing ? (
               <Button
-                size="icon"
+                size="sm"
                 variant="destructive"
                 onClick={handleStopGeneration}
-                className="rounded-full h-8 w-8"
+                className="rounded-full h-8 px-3 gap-1.5"
               >
                 <StopCircle className="h-4 w-4" />
+                <span className="text-xs">Stop</span>
               </Button>
             ) : (
               <Button
-                size="icon"
+                size="sm"
                 onClick={handleSendMessage}
-                disabled={false}
-                className="rounded-full h-8 w-8 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-400"
+                className="rounded-full h-8 px-3 gap-1.5 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-400"
               >
                 <ArrowUp className="h-4 w-4 text-white" />
+                <span className="text-xs text-white">Send</span>
               </Button>
             )}
           </div>

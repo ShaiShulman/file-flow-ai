@@ -77,25 +77,28 @@ export default function MetadataEditor({
       setSavedMetadata({});
       return;
     }
+    const fileId = selectedFile.id;
     const fileName = getFileName(selectedFile.path);
 
     const loadMetadata = async () => {
-      try {
-        const result = await apiClient.getFileMetadata(
-          sessionId,
-          fileName
-        );
-        if (result.metadata && Object.keys(result.metadata).length > 0) {
-          setMetadata(result.metadata);
-          setSavedMetadata(result.metadata);
-          return;
+      // Try loading by stable file ID first, then by filename
+      for (const key of [fileId, fileName]) {
+        try {
+          const result = await apiClient.getFileMetadata(sessionId, key);
+          if (result.metadata && Object.keys(result.metadata).length > 0) {
+            setMetadata(result.metadata);
+            setSavedMetadata(result.metadata);
+            return;
+          }
+        } catch {
+          // Try next key
         }
-      } catch (error) {
-        // Backend failed, fall through to context metadata
       }
 
-      // Fallback: use in-memory metadata from session context
-      const contextMeta = sessionState.allFileMetadata[fileName];
+      // Fallback: use in-memory metadata from session context (try ID first, then filename)
+      const contextMeta =
+        sessionState.allFileMetadata[fileId] ||
+        sessionState.allFileMetadata[fileName];
       if (contextMeta && Object.keys(contextMeta).length > 0) {
         setMetadata(contextMeta);
         setSavedMetadata(contextMeta);
@@ -119,12 +122,11 @@ export default function MetadataEditor({
 
       debounceRef.current = setTimeout(async () => {
         try {
+          const fileId = selectedFile.id;
           const fileName = getFileName(selectedFile.path);
-          await apiClient.updateFileMetadata(
-            sessionId,
-            fileName,
-            newMetadata
-          );
+          // Save by both file ID and filename for compatibility
+          await apiClient.updateFileMetadata(sessionId, fileId, newMetadata);
+          await apiClient.updateFileMetadata(sessionId, fileName, newMetadata).catch(() => {});
           const previousSaved = { ...savedMetadata };
           setSavedMetadata(newMetadata);
 
@@ -140,11 +142,7 @@ export default function MetadataEditor({
                   setMetadata(previousSaved);
                   setSavedMetadata(previousSaved);
                   apiClient
-                    .updateFileMetadata(
-                      sessionId,
-                      fileName,
-                      previousSaved
-                    )
+                    .updateFileMetadata(sessionId, fileId, previousSaved)
                     .catch(console.error);
                   dismiss();
                 }}
