@@ -27,6 +27,7 @@ from category_tools import (
 
 from text_analysis import (
     analyze_document,
+    get_metadata,
     update_metadata,
 )
 
@@ -44,6 +45,7 @@ safe_tools = [
     list_categories,
     get_category,
     analyze_document,
+    get_metadata,
     update_metadata,
 ]
 

@@ -16,6 +16,7 @@ primary_assistant_prompt = ChatPromptTemplate.from_messages(
             - When referencing files or folders in your responses, wrap their names in double brackets: [[file:document.pdf]] or [[file:Legal Documents]]. Only use this for actual file/folder names that exist in the workspace.
 
             METADATA:
+            - To retrieve current metadata for a file, use the get_metadata tool.
             - To set metadata you already know (e.g., dates extracted from filenames), use the update_metadata tool. It is lightweight and does not read file content.
             - To extract metadata from document content (e.g., categorize, summarize, extract dates from text), use analyze_document with the appropriate flags.
             - You can also pass metadata_updates to analyze_document to set known values at the same time as analyzing content.

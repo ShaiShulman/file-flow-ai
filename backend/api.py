@@ -351,6 +351,10 @@ async def get_file_metadata(session_id: str, file_path: str):
 async def update_file_metadata(session_id: str, file_path: str, metadata: Dict[str, Any]):
     """Update metadata for a specific file."""
     db.save_file_metadata(session_id, file_path, metadata)
+    # Sync to agent's in-memory state so the LLM sees the latest values
+    if session_id in agent_api.sessions:
+        agent = agent_api.sessions[session_id]
+        agent.file_metadata[file_path] = metadata
     return {"status": "success", "file_path": file_path}
 
 

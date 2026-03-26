@@ -309,6 +309,28 @@ class TextAnalyzer:
 
 
 @tool
+def get_metadata(
+    file_path: str,
+    state: Annotated[Dict[str, Any], InjectedState] = None,
+) -> Dict[str, Any]:
+    """Retrieve the current metadata for a file. Use this to check what metadata has been set.
+
+    Args:
+        file_path (str): The filename to get metadata for (just the filename, not full path)
+        state (Annotated[Dict[str, Any], InjectedState]): The current state, injected by LangGraph
+
+    Returns:
+        Dict[str, Any]: Dictionary containing the file's metadata, or empty if none set
+    """
+    metadata = {}
+    if state and "file_metadata" in state:
+        metadata = state["file_metadata"].get(file_path, {})
+    if metadata:
+        return {"message": f"Metadata for '{file_path}': {metadata}", "metadata": metadata}
+    return {"message": f"No metadata found for '{file_path}'.", "metadata": {}}
+
+
+@tool
 def update_metadata(
     file_path: str,
     metadata_updates: Dict[str, Any],
@@ -503,8 +525,12 @@ def analyze_document(
     from progress import increment_progress
     increment_progress(os.path.basename(file_path))
 
+    # Build a summary of the metadata for the LLM to see
+    visible_metadata = {k: v for k, v in results.items() if not k.startswith("_") and k != "last_analyzed"}
+    metadata_summary = ", ".join(f"{k}: {v}" for k, v in visible_metadata.items()) if visible_metadata else "no fields extracted"
+
     return {
-        "message": "Document analyzed successfully",
+        "message": f"Document analyzed. Metadata for '{file_path}': {metadata_summary}",
         "file_metadata": metadata_update,
         "total_tokens": total_tokens,
         "affected_files": [full_path],
