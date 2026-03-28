@@ -1,4 +1,5 @@
 "use client";
+import type React from "react";
 import type { FolderType, FileSystemItem, FileType } from "@/lib/types";
 import {
   ChevronRight,
@@ -110,15 +111,27 @@ export default function FolderItem({
     }
   };
 
+  const handleDragStart = (e: React.DragEvent) => {
+    e.dataTransfer.setData(
+      "application/fileflow-folder",
+      JSON.stringify({ name: folder.name, path: folder.path, id: folder.id })
+    );
+    e.dataTransfer.effectAllowed = "copy";
+    // Stop propagation so parent folders don't also start dragging
+    e.stopPropagation();
+  };
+
   return (
     <div>
       <div
+        draggable={!isRoot}
+        onDragStart={!isRoot ? handleDragStart : undefined}
         className={cn(
           "flex items-center py-0.5 hover:bg-stone-100 dark:hover:bg-stone-800 rounded cursor-pointer group",
           isRoot && "font-semibold",
           isFolderAffected &&
             !isRoot &&
-            "bg-amber-50 dark:bg-amber-900/20"
+            "bg-violet-50 dark:bg-violet-900/20"
         )}
         style={{ paddingLeft: isRoot ? "8px" : `${paddingLeft}px` }}
         onClick={() => onToggleFolder(folder.id)}
@@ -132,10 +145,8 @@ export default function FolderItem({
           <Database className="h-3.5 w-3.5 text-stone-700 dark:text-stone-300 mr-1.5 flex-shrink-0" />
         ) : (
           <Folder
-            className={cn(
-              "h-3.5 w-3.5 mr-1.5 flex-shrink-0",
-              isFolderAffected ? "text-amber-500" : "text-stone-500"
-            )}
+            className="h-3.5 w-3.5 mr-1.5 flex-shrink-0"
+            style={{ color: "#7c3aed", fill: "#7c3aed" }}
           />
         )}
         <span
@@ -143,7 +154,7 @@ export default function FolderItem({
             "truncate text-xs",
             isFolderAffected &&
               !isRoot &&
-              "font-medium text-amber-700 dark:text-amber-300"
+              "font-medium text-violet-700 dark:text-violet-300"
           )}
         >
           {folder.name}
@@ -152,13 +163,15 @@ export default function FolderItem({
           ({folder.children.length})
         </span>
 
-        {isFolderAffected && !isRoot && (
-          <span className="ml-1.5 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 px-1.5 py-0.5 rounded-full text-[10px] font-semibold">
-            NEW
-          </span>
-        )}
+        <div className="ml-auto flex items-center gap-1">
+          {isFolderAffected && !isRoot && (
+            <span className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 px-1.5 py-0.5 rounded-full text-[10px] font-semibold">
+              NEW
+            </span>
+          )}
+        </div>
 
-        <div className="ml-auto opacity-0 group-hover:opacity-100 flex items-center">
+        <div className="opacity-0 group-hover:opacity-100 flex items-center">
           <Button size="icon" variant="ghost" className="h-5 w-5">
             <Edit className="h-3 w-3" />
           </Button>

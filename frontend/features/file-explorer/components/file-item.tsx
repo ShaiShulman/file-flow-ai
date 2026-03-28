@@ -3,17 +3,11 @@
 import type React from "react";
 import type { FileType } from "@/lib/types";
 import {
-  FileText,
-  FileIcon as FilePdf,
   Edit,
   Trash2,
-  AlertCircle,
-  PlusCircle,
-  ArrowRightLeft,
-  Copy,
-  Pencil,
   ScanLine,
 } from "lucide-react";
+import { getFileIcon } from "@/lib/utils/file-icons";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -78,7 +72,7 @@ export default function FileItem({
       className={cn(
         "flex items-center py-0.5 rounded cursor-pointer group",
         !isRecentlyAffected && "hover:bg-stone-100 dark:hover:bg-stone-800",
-        isSelected && !isRecentlyAffected && "bg-amber-50 text-amber-900 ring-1 ring-amber-300 hover:bg-amber-100",
+        isSelected && !isRecentlyAffected && "bg-violet-50 text-violet-900 ring-1 ring-violet-300 hover:bg-violet-100",
         !isSelected && !isRecentlyAffected && indicator && indicator.bg,
         !isSelected && !isRecentlyAffected && !indicator && isAffected && "bg-green-50 dark:bg-green-900/20",
         isRecentlyAffected && "recently-affected"
@@ -86,11 +80,11 @@ export default function FileItem({
       style={{ paddingLeft: `${paddingLeft}px` }}
       onClick={() => onSelect(file)}
     >
-      {file.extension === "pdf" ? (
-        <FilePdf className="h-3.5 w-3.5 mr-1.5 flex-shrink-0 text-red-500" />
-      ) : (
-        <FileText className="h-3.5 w-3.5 mr-1.5 flex-shrink-0 text-stone-500" />
-      )}
+      {(() => {
+        const ext = file.extension || file.name.split(".").pop();
+        const { icon: FileTypeIcon, color } = getFileIcon(ext);
+        return <FileTypeIcon className="h-3.5 w-3.5 mr-1.5 flex-shrink-0" style={{ color }} />;
+      })()}
       <span className="truncate text-xs">{file.name}</span>
 
       {fileMetadata?._ocr_scanned && (
@@ -105,7 +99,7 @@ export default function FileItem({
           <div className="w-1.5 h-1.5 rounded-full shrink-0 bg-green-500" />
         )}
         {file.changed && !indicator && !isAffected && (
-          <div className="w-1.5 h-1.5 rounded-full shrink-0 bg-amber-500" />
+          <div className="w-1.5 h-1.5 rounded-full shrink-0 bg-violet-500" />
         )}
       </div>
 

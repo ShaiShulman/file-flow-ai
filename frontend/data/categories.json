@@ -7,7 +7,8 @@
         "certificate of incorporation",
         "articles of incorporation",
         "bylaws",
-        "certificate of merger"
+        "certificate of merger",
+        "deed of incorporation"
       ]
     },
     {
@@ -62,11 +63,6 @@
         "Litigation",
         "claims"
       ]
-    },
-    {
-      "id": "a455e188-88d2-4d1a-9aec-9d626e094a6e",
-      "name": "Extracts",
-      "options": []
     }
   ]
 }

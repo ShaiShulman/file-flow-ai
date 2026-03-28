@@ -2,25 +2,92 @@
 
 import type React from "react";
 import { useState, useRef, useEffect, useCallback } from "react";
-import { StopCircle, ArrowUp, Loader2, FileText, AlertCircle } from "lucide-react";
+import {
+  StopCircle,
+  ArrowUp,
+  Loader2,
+  AlertCircle,
+  FileText,
+} from "lucide-react";
+import { getFileIcon } from "@/lib/utils/file-icons";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
 import { useChat, type ChatMessage } from "@/features/chat/hooks";
 import FileBadge from "./file-badge";
 import type { FileReference } from "@/lib/types";
 
+// SVG icon strings for imperative badge creation (drag-drop)
+const FILE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:middle"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg>`;
+const FOLDER_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="#7c3aed" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:middle"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>`;
+
+function formatRelativeTime(date: Date): string {
+  const now = Date.now();
+  const diff = now - date.getTime();
+  const seconds = Math.floor(diff / 1000);
+  if (seconds < 5) return "just now";
+  if (seconds < 60) return `${seconds}s ago`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `${days}d ago`;
+  const months = Math.floor(days / 30);
+  if (months < 12) return `${months}mo ago`;
+  const years = Math.floor(months / 12);
+  return `${years}y ago`;
+}
+
+function getIconSvgForFile(name: string): { svg: string; color: string } {
+  const ext = (name.split(".").pop() || "").toLowerCase();
+  const colorMap: Record<string, string> = {
+    pdf: "#ef4444",
+    doc: "#3b82f6",
+    docx: "#3b82f6",
+    xls: "#16a34a",
+    xlsx: "#16a34a",
+    csv: "#16a34a",
+    ppt: "#f97316",
+    pptx: "#f97316",
+    jpg: "#ec4899",
+    jpeg: "#ec4899",
+    png: "#ec4899",
+    gif: "#ec4899",
+    svg: "#ec4899",
+    webp: "#ec4899",
+    txt: "#78716c",
+    md: "#78716c",
+    rtf: "#78716c",
+    zip: "#d97706",
+    rar: "#d97706",
+    "7z": "#d97706",
+    tar: "#d97706",
+    gz: "#d97706",
+    json: "#ca8a04",
+    xml: "#ca8a04",
+    yaml: "#ca8a04",
+    yml: "#ca8a04",
+  };
+  const color = colorMap[ext] || "#a8a29e";
+  return {
+    svg: FILE_SVG.replace('stroke="currentColor"', `stroke="${color}"`),
+    color,
+  };
+}
+
 function parseMessageContent(
   content: string,
-  onFileClick?: (fileName: string) => void
+  onFileClick?: (fileName: string) => void,
 ): React.ReactNode {
   const parts = content.split(/(\[\[file:[^\]]+\]\])/g);
   return parts.map((part, index) => {
     const match = part.match(/^\[\[file:([^\]]+)\]\]$/);
     if (match) {
-      return <FileBadge key={index} fileName={match[1]} onClick={onFileClick} />;
+      return (
+        <FileBadge key={index} fileName={match[1]} onClick={onFileClick} />
+      );
     }
     return <span key={index}>{part}</span>;
   });
@@ -38,15 +105,19 @@ function parseUserMessage(content: string): React.ReactNode {
     const rest = legacyMatch[2];
     return (
       <>
-        {fileNames.map((name, i) => (
-          <span
-            key={i}
-            className="inline-flex items-center gap-1 px-1.5 py-0.5 mx-0.5 rounded-md bg-white dark:bg-blue-900 text-xs text-blue-700 dark:text-blue-200 border border-blue-200 align-middle"
-          >
-            <FileText className="h-3 w-3 text-blue-400 dark:text-blue-400" />
-            {name}
-          </span>
-        ))}
+        {fileNames.map((name, i) => {
+          const ext = name.split(".").pop();
+          const { icon: TypeIcon, color } = getFileIcon(ext);
+          return (
+            <span
+              key={i}
+              className="inline-flex items-center gap-1 px-1.5 py-0.5 mx-0.5 rounded-md bg-amber-50 dark:bg-amber-900/30 text-xs text-amber-800 dark:text-amber-200 border border-amber-200 align-middle"
+            >
+              <TypeIcon className="h-3 w-3 shrink-0" style={{ color }} />
+              {name}
+            </span>
+          );
+        })}
         {rest && <span> {rest}</span>}
       </>
     );
@@ -55,12 +126,14 @@ function parseUserMessage(content: string): React.ReactNode {
   return parts.map((part, index) => {
     const match = part.match(/^\{\{file:(.+)\}\}$/);
     if (match) {
+      const ext = match[1].split(".").pop();
+      const { icon: TypeIcon, color } = getFileIcon(ext);
       return (
         <span
           key={index}
-          className="inline-flex items-center gap-1 px-1.5 py-0.5 mx-0.5 rounded-md bg-white dark:bg-blue-900 text-xs text-blue-700 dark:text-blue-200 border border-blue-200 align-middle"
+          className="inline-flex items-center gap-1 px-1.5 py-0.5 mx-0.5 rounded-md bg-amber-50 dark:bg-amber-900/30 text-xs text-amber-800 dark:text-amber-200 border border-amber-200 align-middle"
         >
-          <FileText className="h-3 w-3 text-blue-400 dark:text-blue-400" />
+          <TypeIcon className="h-3 w-3 shrink-0" style={{ color }} />
           {match[1]}
         </span>
       );
@@ -73,8 +146,14 @@ interface ChatInterfaceProps {
   sessionId: string | null;
   workingDirectory?: string;
   updateAffectedFiles?: (files: string[]) => void;
-  onFolderStructureChange?: (affectedFiles?: string[], lastAffectedFiles?: string[]) => void;
-  onResponseData?: (data: { actions: Array<Record<string, any>>; file_metadata: Record<string, any> }) => void;
+  onFolderStructureChange?: (
+    affectedFiles?: string[],
+    lastAffectedFiles?: string[],
+  ) => void;
+  onResponseData?: (data: {
+    actions: Array<Record<string, any>>;
+    file_metadata: Record<string, any>;
+  }) => void;
   onFileSelect?: (fileName: string) => void;
 }
 
@@ -94,12 +173,16 @@ export default function ChatInterface({
     sessionId,
     updateAffectedFiles,
     onFolderStructureChange,
-    onResponseData
+    onResponseData,
   );
 
   // Load messages from backend when session is restored (messages empty but session exists)
   useEffect(() => {
-    if (sessionId && chatState.messages.length === 0 && !chatState.isProcessing) {
+    if (
+      sessionId &&
+      chatState.messages.length === 0 &&
+      !chatState.isProcessing
+    ) {
       loadMessages();
     }
   }, [sessionId]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -110,7 +193,10 @@ export default function ChatInterface({
   }, [chatState.messages, chatState.isProcessing]);
 
   // Extract text and file references from the contentEditable editor
-  const getEditorContent = useCallback((): { text: string; fileNames: string[] } => {
+  const getEditorContent = useCallback((): {
+    text: string;
+    fileNames: string[];
+  } => {
     const editor = editorRef.current;
     if (!editor) return { text: "", fileNames: [] };
 
@@ -174,70 +260,87 @@ export default function ChatInterface({
     }
   };
 
-  // Insert a file badge at the current cursor position in the editor
-  const insertFileBadge = useCallback((fileRef: FileReference) => {
-    const editor = editorRef.current;
-    if (!editor) return;
+  // Insert a file/folder badge at the current cursor position in the editor
+  const insertFileBadge = useCallback(
+    (fileRef: FileReference, isFolder = false) => {
+      const editor = editorRef.current;
+      if (!editor) return;
 
-    // Check if already inserted
-    const existing = editor.querySelector(`[data-file-ref="${fileRef.name}"]`);
-    if (existing) return;
+      // Check if already inserted
+      const existing = editor.querySelector(
+        `[data-file-ref="${fileRef.name}"]`,
+      );
+      if (existing) return;
 
-    // Create the badge element
-    const badge = document.createElement("span");
-    badge.setAttribute("data-file-ref", fileRef.name);
-    badge.setAttribute("contenteditable", "false");
-    badge.className =
-      "inline-flex items-center gap-1 px-1.5 py-0.5 mx-0.5 rounded-md bg-white dark:bg-blue-900 text-xs text-blue-700 dark:text-blue-200 border border-blue-200 dark:border-blue-700 align-middle select-none";
-    badge.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-400" style="display:inline;vertical-align:middle"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg><span>${fileRef.name}</span>`;
+      // Pick the right icon SVG
+      const iconSvg = isFolder
+        ? FOLDER_SVG
+        : getIconSvgForFile(fileRef.name).svg;
 
-    // Add remove button
-    const removeBtn = document.createElement("button");
-    removeBtn.type = "button";
-    removeBtn.className = "ml-0.5 hover:text-red-500 transition-colors";
-    removeBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>`;
-    removeBtn.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      badge.remove();
+      // Create the badge element
+      const badge = document.createElement("span");
+      badge.setAttribute("data-file-ref", fileRef.name);
+      badge.setAttribute("contenteditable", "false");
+      badge.className =
+        "inline-flex items-center gap-1 px-1.5 py-0.5 mx-0.5 rounded-md bg-amber-50 dark:bg-amber-900/30 text-xs text-amber-800 dark:text-amber-200 border border-amber-200 dark:border-amber-700 align-middle select-none";
+      badge.innerHTML = `${iconSvg}<span>${fileRef.name}</span>`;
+
+      // Add remove button
+      const removeBtn = document.createElement("button");
+      removeBtn.type = "button";
+      removeBtn.className = "ml-0.5 hover:text-red-500 transition-colors";
+      removeBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>`;
+      removeBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        badge.remove();
+        editor.focus();
+      });
+      badge.appendChild(removeBtn);
+
+      // Insert at cursor position or at end
+      const selection = window.getSelection();
+      if (
+        selection &&
+        selection.rangeCount > 0 &&
+        editor.contains(selection.anchorNode)
+      ) {
+        const range = selection.getRangeAt(0);
+        range.deleteContents();
+        range.insertNode(badge);
+        // Move cursor after the badge
+        range.setStartAfter(badge);
+        range.setEndAfter(badge);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      } else {
+        editor.appendChild(badge);
+      }
+
+      // Add a space after the badge for continued typing
+      const space = document.createTextNode("\u00A0");
+      badge.after(space);
+      // Move cursor after space
+      const newRange = document.createRange();
+      newRange.setStartAfter(space);
+      newRange.setEndAfter(space);
+      const sel = window.getSelection();
+      if (sel) {
+        sel.removeAllRanges();
+        sel.addRange(newRange);
+      }
+
       editor.focus();
-    });
-    badge.appendChild(removeBtn);
+    },
+    [],
+  );
 
-    // Insert at cursor position or at end
-    const selection = window.getSelection();
-    if (selection && selection.rangeCount > 0 && editor.contains(selection.anchorNode)) {
-      const range = selection.getRangeAt(0);
-      range.deleteContents();
-      range.insertNode(badge);
-      // Move cursor after the badge
-      range.setStartAfter(badge);
-      range.setEndAfter(badge);
-      selection.removeAllRanges();
-      selection.addRange(range);
-    } else {
-      editor.appendChild(badge);
-    }
-
-    // Add a space after the badge for continued typing
-    const space = document.createTextNode("\u00A0");
-    badge.after(space);
-    // Move cursor after space
-    const newRange = document.createRange();
-    newRange.setStartAfter(space);
-    newRange.setEndAfter(space);
-    const sel = window.getSelection();
-    if (sel) {
-      sel.removeAllRanges();
-      sel.addRange(newRange);
-    }
-
-    editor.focus();
-  }, []);
-
-  // Drag-and-drop handlers
+  // Drag-and-drop handlers (accept both files and folders)
   const handleDragOver = (e: React.DragEvent) => {
-    if (e.dataTransfer.types.includes("application/fileflow-file")) {
+    if (
+      e.dataTransfer.types.includes("application/fileflow-file") ||
+      e.dataTransfer.types.includes("application/fileflow-folder")
+    ) {
       e.preventDefault();
       e.dataTransfer.dropEffect = "copy";
       setIsDragOver(true);
@@ -254,13 +357,21 @@ export default function ChatInterface({
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragOver(false);
-    const data = e.dataTransfer.getData("application/fileflow-file");
-    if (data) {
+    const fileData = e.dataTransfer.getData("application/fileflow-file");
+    const folderData = e.dataTransfer.getData("application/fileflow-folder");
+    if (fileData) {
       try {
-        const fileRef: FileReference = JSON.parse(data);
-        insertFileBadge(fileRef);
+        const fileRef: FileReference = JSON.parse(fileData);
+        insertFileBadge(fileRef, false);
       } catch {
-        // Invalid data, ignore
+        /* Invalid data */
+      }
+    } else if (folderData) {
+      try {
+        const folderRef: FileReference = JSON.parse(folderData);
+        insertFileBadge(folderRef, true);
+      } catch {
+        /* Invalid data */
       }
     }
   };
@@ -286,62 +397,87 @@ export default function ChatInterface({
                 <div
                   key={message.id}
                   className={cn(
-                    "flex flex-col p-3",
+                    "flex flex-col max-w-[85%]",
                     message.role === "user"
-                      ? "bg-stone-100 dark:bg-stone-800 ml-auto max-w-[85%] rounded-2xl rounded-br-sm"
-                      : message.isError
-                        ? "bg-red-50 dark:bg-red-950 border border-red-300 dark:border-red-800 mr-auto max-w-[85%] rounded-2xl rounded-bl-sm"
-                        : "bg-white dark:bg-stone-900 border border-stone-200 mr-auto max-w-[85%] rounded-2xl rounded-bl-sm"
+                      ? "ml-auto items-end"
+                      : "mr-auto items-start",
                   )}
                 >
-                  {message.isError && (
-                    <div className="flex items-center gap-1.5 mb-1.5 text-red-600 dark:text-red-400">
-                      <AlertCircle className="h-4 w-4" />
-                      <span className="text-xs font-medium">Error</span>
+                  {/* Message bubble */}
+                  <div
+                    className={cn(
+                      "flex flex-col items-start p-3 w-full",
+                      message.role === "user"
+                        ? "bg-stone-100 dark:bg-stone-800 rounded-2xl rounded-br-sm"
+                        : message.isError
+                          ? "bg-red-50 dark:bg-red-950 border border-red-300 dark:border-red-800 rounded-2xl rounded-bl-sm"
+                          : "bg-white dark:bg-stone-900 border border-stone-200 rounded-2xl rounded-bl-sm",
+                    )}
+                  >
+                    {message.isError && (
+                      <div className="flex items-center gap-1.5 mb-1.5 text-red-600 dark:text-red-400">
+                        <AlertCircle className="h-4 w-4" />
+                        <span className="text-xs font-medium">Error</span>
+                      </div>
+                    )}
+                    <div
+                      className={cn(
+                        "whitespace-pre-wrap text-xs text-left",
+                        message.isError && "text-red-700 dark:text-red-300",
+                      )}
+                    >
+                      {message.role === "assistant"
+                        ? parseMessageContent(message.content, onFileSelect)
+                        : parseUserMessage(message.content)}
                     </div>
-                  )}
-                  <div className={cn(
-                    "whitespace-pre-wrap text-sm",
-                    message.isError && "text-red-700 dark:text-red-300"
-                  )}>
-                    {message.role === "assistant"
-                      ? parseMessageContent(message.content, onFileSelect)
-                      : parseUserMessage(message.content)}
+
+                    {/* Affected files count for assistant messages */}
+                    {message.role === "assistant" &&
+                      message.metadata?.last_affected_files &&
+                      message.metadata.last_affected_files.length > 0 && (
+                        <div className="flex items-l gap-1 mt-2 text-xs text-muted-foreground">
+                          <FileText className="h-3 w-3 " />
+                          <span>
+                            {
+                              new Set(
+                                message.metadata.last_affected_files.map(
+                                  (p) => p.split(/[\\/]/).pop() || p,
+                                ),
+                              ).size
+                            }{" "}
+                            file(s) affected
+                          </span>
+                        </div>
+                      )}
                   </div>
 
-                  {/* Affected files count for assistant messages */}
-                  {message.role === "assistant" &&
-                    message.metadata?.last_affected_files &&
-                    message.metadata.last_affected_files.length > 0 && (
-                      <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
-                        <FileText className="h-3 w-3" />
+                  {/* Timestamp + stats below bubble */}
+                  <div
+                    className={cn(
+                      "flex items-center gap-2 mt-1 px-1 w-full",
+                      message.role === "user"
+                        ? "justify-end"
+                        : "justify-between",
+                    )}
+                  >
+                    <span className="text-[10px] text-muted-foreground">
+                      {formatRelativeTime(message.timestamp)}
+                    </span>
+                    {message.stats && (
+                      <div className="flex gap-1.5 text-[10px] text-muted-foreground">
+                        <span>{message.stats.input_tokens} in</span>
+                        <span>{message.stats.output_tokens} out</span>
+                        <span>${message.stats.cost_usd.toFixed(4)}</span>
                         <span>
-                          {new Set(message.metadata.last_affected_files.map(
-                            (p) => p.split(/[\\/]/).pop() || p
-                          )).size} file(s) affected
+                          {(message.stats.duration_ms / 1000).toFixed(1)}s
                         </span>
                       </div>
                     )}
-
-                  <div className="flex justify-between items-center mt-2">
-                    <div className="text-xs text-muted-foreground">
-                      {message.timestamp.toLocaleTimeString()}
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      {message.stats && (
-                        <div className="flex gap-2 text-xs text-muted-foreground">
-                          <span>{message.stats.input_tokens} in</span>
-                          <span>{message.stats.output_tokens} out</span>
-                          <span>${message.stats.cost_usd.toFixed(4)}</span>
-                          <span>{(message.stats.duration_ms / 1000).toFixed(1)}s</span>
-                        </div>
-                      )}
-                      {message.tokens && !message.stats && (
-                        <Badge variant="outline" className="text-xs">
-                          {message.tokens} tokens
-                        </Badge>
-                      )}
-                    </div>
+                    {message.tokens && !message.stats && (
+                      <span className="text-[10px] text-muted-foreground">
+                        {message.tokens} tokens
+                      </span>
+                    )}
                   </div>
                 </div>
               ))}
@@ -350,24 +486,33 @@ export default function ChatInterface({
               {chatState.isProcessing && (
                 <div className="flex flex-col p-3 bg-white dark:bg-stone-900 border border-stone-200 mr-auto max-w-[85%] rounded-2xl rounded-bl-sm">
                   <div className="flex items-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
-                    <span className="text-sm text-muted-foreground">Processing your request...</span>
+                    <Loader2 className="h-4 w-4 animate-spin text-violet-500" />
+                    <span className="text-sm text-muted-foreground">
+                      Processing your request...
+                    </span>
                   </div>
                   {chatState.progress && chatState.progress.total > 1 ? (
                     <div className="mt-2 pl-6 space-y-1.5">
                       <div className="w-full h-1.5 bg-stone-200 dark:bg-stone-700 rounded-full overflow-hidden">
                         <div
-                          className="h-full bg-blue-500 rounded-full transition-all duration-300"
-                          style={{ width: `${Math.min(100, Math.round((chatState.progress.current / chatState.progress.total) * 100))}%` }}
+                          className="h-full bg-violet-500 rounded-full transition-all duration-300"
+                          style={{
+                            width: `${Math.min(100, Math.round((chatState.progress.current / chatState.progress.total) * 100))}%`,
+                          }}
                         />
                       </div>
                       <div className="text-xs text-muted-foreground">
                         <span>Processing file </span>
-                        <span className="font-medium tabular-nums">{chatState.progress.current}/{chatState.progress.total}</span>
+                        <span className="font-medium tabular-nums">
+                          {chatState.progress.current}/
+                          {chatState.progress.total}
+                        </span>
                         {chatState.progress.current_file && (
                           <span title={chatState.progress.current_file}>
-                            : {chatState.progress.current_file.length > 35
-                              ? chatState.progress.current_file.slice(0, 32) + "..."
+                            :{" "}
+                            {chatState.progress.current_file.length > 35
+                              ? chatState.progress.current_file.slice(0, 32) +
+                                "..."
                               : chatState.progress.current_file}
                           </span>
                         )}
@@ -390,49 +535,50 @@ export default function ChatInterface({
       <div className="pt-3">
         <div
           className={cn(
-            "relative rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950 transition-colors focus-within:ring-2 focus-within:ring-blue-300 dark:focus-within:ring-blue-700",
-            isDragOver && "ring-2 ring-blue-400 bg-blue-100/50 dark:bg-blue-900/30"
+            "relative rounded-xl border border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-950 transition-colors focus-within:ring-2 focus-within:ring-violet-300 dark:focus-within:ring-violet-700",
+            isDragOver &&
+              "ring-2 ring-violet-400 bg-violet-100/50 dark:bg-violet-900/30",
           )}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
         >
-          <div
-            ref={editorRef}
-            contentEditable={!chatState.isProcessing}
-            role="textbox"
-            title="Chat message input"
-            aria-multiline="true"
-            aria-placeholder="What changes do you want to make?"
-            className={cn(
-              "w-full bg-transparent px-4 py-3 pr-16 text-sm focus:outline-none min-h-[80px] max-h-[200px] overflow-y-auto",
-              "empty:before:content-[attr(aria-placeholder)] empty:before:text-blue-300 empty:before:pointer-events-none"
-            )}
-            onKeyDown={handleKeyDown}
-            onPaste={handlePaste}
-            suppressContentEditableWarning
-          />
-          <div className="absolute right-2 bottom-2 flex items-center gap-1">
-            {chatState.isProcessing ? (
-              <Button
-                size="sm"
-                variant="destructive"
-                onClick={handleStopGeneration}
-                className="rounded-full h-8 px-3 gap-1.5"
-              >
-                <StopCircle className="h-4 w-4" />
-                <span className="text-xs">Stop</span>
-              </Button>
-            ) : (
-              <Button
-                size="sm"
-                onClick={handleSendMessage}
-                className="rounded-full h-8 px-3 gap-1.5 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-400"
-              >
-                <ArrowUp className="h-4 w-4 text-white" />
-                <span className="text-xs text-white">Send</span>
-              </Button>
-            )}
+          <div className="flex items-center gap-2">
+            <div
+              ref={editorRef}
+              contentEditable={!chatState.isProcessing}
+              role="textbox"
+              title="Chat message input"
+              aria-multiline="true"
+              aria-placeholder="What changes do you want to make?"
+              className={cn(
+                "flex-1 bg-transparent px-4 py-3 text-sm focus:outline-none min-h-[80px] max-h-[200px] overflow-y-auto",
+                "empty:before:content-[attr(aria-placeholder)] empty:before:text-violet-300 empty:before:pointer-events-none",
+              )}
+              onKeyDown={handleKeyDown}
+              onPaste={handlePaste}
+              suppressContentEditableWarning
+            />
+            <div className="self-center pr-2 shrink-0">
+              {chatState.isProcessing ? (
+                <Button
+                  size="icon"
+                  variant="destructive"
+                  onClick={handleStopGeneration}
+                  className="rounded-full h-8 w-8"
+                >
+                  <StopCircle className="h-4 w-4" />
+                </Button>
+              ) : (
+                <Button
+                  size="icon"
+                  onClick={handleSendMessage}
+                  className="rounded-full h-8 w-8 bg-violet-600 dark:bg-violet-500 hover:bg-violet-700 dark:hover:bg-violet-400"
+                >
+                  <ArrowUp className="h-4 w-4 text-white" />
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </div>

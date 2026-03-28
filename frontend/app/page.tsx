@@ -4,8 +4,7 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import FileExplorer from "@/features/file-explorer/components/file-explorer";
 import ChatInterface from "@/features/chat/components/chat-interface";
-import FileInfoPanel from "@/components/file-info-panel";
-import SessionPanel from "@/components/session-panel";
+import UnifiedInfoPanel from "@/components/unified-info-panel";
 import Toolbar from "@/components/toolbar";
 import { Toaster } from "@/components/ui/toaster";
 import { toast } from "@/components/ui/use-toast";
@@ -20,9 +19,6 @@ import {
   ResizablePanel,
   ResizableHandle,
 } from "@/components/ui/resizable";
-import { ChevronDown, ChevronUp } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import type { ImperativePanelHandle } from "react-resizable-panels";
 
 function findFileInTree(folder: FolderType, name: string): FileType | null {
   for (const child of folder.children) {
@@ -43,9 +39,7 @@ function HomeContent() {
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
   const [isExportOpen, setIsExportOpen] = useState(false);
-  const [isSessionPanelCollapsed, setIsSessionPanelCollapsed] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
-  const sessionPanelRef = useRef<ImperativePanelHandle>(null);
   const restoredRef = useRef(false);
 
   const searchParams = useSearchParams();
@@ -291,17 +285,6 @@ function HomeContent() {
     }
   };
 
-  const toggleSessionPanel = () => {
-    const panel = sessionPanelRef.current;
-    if (panel) {
-      if (isSessionPanelCollapsed) {
-        panel.expand();
-      } else {
-        panel.collapse();
-      }
-    }
-  };
-
   return (
     <main className="flex h-screen flex-col bg-stone-50 dark:bg-stone-900 overflow-hidden">
       <Toolbar
@@ -334,11 +317,11 @@ function HomeContent() {
 
           <ResizableHandle withHandle />
 
-          {/* Right: File Explorer + File Info + Session Info */}
+          {/* Right: File Explorer + Unified Info Panel */}
           <ResizablePanel defaultSize={55} minSize={30}>
             <ResizablePanelGroup direction="vertical">
               {/* File Explorer */}
-              <ResizablePanel defaultSize={40} minSize={15} className="p-2 overflow-hidden">
+              <ResizablePanel defaultSize={45} minSize={15} className="p-2 overflow-hidden">
                 <Suspense fallback={<div className="flex items-center justify-center h-full text-muted-foreground">Loading files...</div>}>
                   <FileExplorer
                     onFileSelect={handleFileSelect}
@@ -351,46 +334,11 @@ function HomeContent() {
 
               <ResizableHandle withHandle />
 
-              {/* File Info (selected file) */}
-              <ResizablePanel defaultSize={30} minSize={10} className="p-2 overflow-hidden">
+              {/* Unified Info Panel (File Details + Session Info) */}
+              <ResizablePanel defaultSize={55} minSize={20} className="overflow-hidden">
                 <Suspense fallback={<div className="flex items-center justify-center h-full text-muted-foreground">Loading...</div>}>
-                  <FileInfoPanel selectedFile={selectedFile} sessionId={sessionState.sessionId} />
+                  <UnifiedInfoPanel selectedFile={selectedFile} sessionId={sessionState.sessionId} />
                 </Suspense>
-              </ResizablePanel>
-
-              <ResizableHandle withHandle />
-
-              {/* Session Info (collapsible) */}
-              <ResizablePanel
-                ref={sessionPanelRef}
-                defaultSize={30}
-                minSize={10}
-                collapsible
-                collapsedSize={0}
-                onCollapse={() => setIsSessionPanelCollapsed(true)}
-                onExpand={() => setIsSessionPanelCollapsed(false)}
-                className="relative overflow-hidden"
-              >
-                {/* Collapse toggle button */}
-                <div className="absolute top-1 right-1 z-10">
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-6 w-6"
-                    onClick={toggleSessionPanel}
-                  >
-                    {isSessionPanelCollapsed ? (
-                      <ChevronUp className="h-3.5 w-3.5" />
-                    ) : (
-                      <ChevronDown className="h-3.5 w-3.5" />
-                    )}
-                  </Button>
-                </div>
-                <div className="p-2 h-full overflow-auto">
-                  <Suspense fallback={<div className="flex items-center justify-center h-full text-muted-foreground">Loading...</div>}>
-                    <SessionPanel sessionId={sessionState.sessionId} />
-                  </Suspense>
-                </div>
               </ResizablePanel>
             </ResizablePanelGroup>
           </ResizablePanel>

@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+
 import { Plus, X, Save, Edit, Trash2, Loader2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import type { Category } from "@/lib/types";
@@ -43,7 +43,7 @@ export default function CategoryEditor() {
   // Helper to cancel operation (UI-only)
   const cancelOperation = (
     operationType: keyof LoadingStates,
-    key?: string
+    key?: string,
   ) => {
     setLoadingStates((prev) => ({
       ...prev,
@@ -116,8 +116,8 @@ export default function CategoryEditor() {
         await updateCategory(categoryId, { name: newName });
         setCategories(
           categories.map((cat) =>
-            cat.id === categoryId ? { ...cat, name: newName } : cat
-          )
+            cat.id === categoryId ? { ...cat, name: newName } : cat,
+          ),
         );
       }
 
@@ -174,8 +174,8 @@ export default function CategoryEditor() {
         categories.map((cat) =>
           cat.id === categoryId
             ? { ...cat, options: [...cat.options, newOption] }
-            : cat
-        )
+            : cat,
+        ),
       );
       setNewOptions({
         ...newOptions,
@@ -208,8 +208,8 @@ export default function CategoryEditor() {
         categories.map((cat) =>
           cat.id === categoryId
             ? { ...cat, options: cat.options.filter((opt) => opt !== option) }
-            : cat
-        )
+            : cat,
+        ),
       );
       toast({
         title: "Option deleted",
@@ -226,239 +226,53 @@ export default function CategoryEditor() {
     }
   };
 
-  return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h3 className="text-sm font-medium">Document Categories</h3>
-        <Button size="sm" onClick={handleAddCategory}>
-          <Plus className="h-3.5 w-3.5" />
-        </Button>
-      </div>
+  const renderCategoryCard = (category: Category, isTemp = false) => {
+    const isEditing = editingCategory === category.id;
+    const isSaving = loadingStates.savingCategory === category.id;
+    const isDeleting = loadingStates.deletingCategory === category.id;
 
-      <div className="space-y-4">
-        {categories.map((category) => (
-          <div
-            key={category.id}
-            className="pb-3 border-b border-slate-100 dark:border-slate-800 last:border-0"
-            ref={editingCategory === category.id ? newCategoryRef : null}
-          >
-            <div className="flex items-center justify-between mb-2">
-              {editingCategory === category.id ? (
-                <div className="flex items-center gap-2 flex-1">
-                  <Input
-                    value={category.name}
-                    onChange={(e) => {
-                      if (tempCategory && category.id === tempCategory.id) {
-                        setTempCategory({
-                          ...tempCategory,
-                          name: e.target.value,
-                        });
-                      } else {
-                        setCategories(
-                          categories.map((cat) =>
-                            cat.id === category.id
-                              ? { ...cat, name: e.target.value }
-                              : cat
-                          )
-                        );
-                      }
-                    }}
-                    className="h-7 text-sm"
-                    autoFocus
-                    disabled={loadingStates.savingCategory === category.id}
-                  />
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() =>
-                      handleSaveCategory(category.id, category.name)
-                    }
-                    disabled={loadingStates.savingCategory === category.id}
-                    className="h-7 w-7 p-0"
-                  >
-                    {loadingStates.savingCategory === category.id ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <Save className="h-3.5 w-3.5" />
-                    )}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={handleCancelEdit}
-                    className="h-7 w-7 p-0"
-                    title={
-                      loadingStates.savingCategory === category.id
-                        ? "Cancel operation"
-                        : "Cancel edit"
-                    }
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              ) : (
-                <>
-                  <h4 className="font-medium text-sm">{category.name}</h4>
-                  <div className="flex items-center">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleEditCategory(category.id)}
-                      disabled={loadingStates.deletingCategory === category.id}
-                      className="h-7 w-7 p-0"
-                    >
-                      <Edit className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleDeleteCategory(category.id)}
-                      disabled={loadingStates.deletingCategory === category.id}
-                      className="h-7 w-7 p-0"
-                    >
-                      {loadingStates.deletingCategory === category.id ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        <Trash2 className="h-3.5 w-3.5" />
-                      )}
-                    </Button>
-                    {loadingStates.deletingCategory === category.id && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => cancelOperation("deletingCategory")}
-                        className="h-7 w-7 p-0 ml-1"
-                        title="Cancel deletion"
-                      >
-                        <X className="h-3.5 w-3.5" />
-                      </Button>
-                    )}
-                  </div>
-                </>
-              )}
-            </div>
-
-            <div className="flex flex-wrap gap-1 mb-2">
-              {category.options.map((option, index) => {
-                const isDeleting =
-                  loadingStates.deletingOption?.categoryId === category.id &&
-                  loadingStates.deletingOption?.option === option;
-
-                return (
-                  <Badge
-                    key={`${category.id}-${option}-${index}`}
-                    variant="outline"
-                    className="flex items-center gap-1 px-2 py-0.5 group"
-                  >
-                    {option}
-                    <div className="flex items-center ml-1">
-                      {isDeleting ? (
-                        <>
-                          <Loader2 className="h-3 w-3 animate-spin mr-1" />
-                          <button
-                            onClick={() =>
-                              cancelOperation(
-                                "deletingOption",
-                                `${category.id}-${option}`
-                              )
-                            }
-                            className="hover:bg-destructive/10 rounded"
-                            title="Cancel deletion"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
-                        </>
-                      ) : (
-                        <button
-                          onClick={() =>
-                            handleDeleteOption(category.id, option)
-                          }
-                          className="opacity-0 group-hover:opacity-100"
-                          disabled={isDeleting}
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      )}
-                    </div>
-                  </Badge>
-                );
-              })}
-
-              <div className="flex items-center">
-                <Input
-                  placeholder="New option"
-                  value={newOptions[category.id] || ""}
-                  onChange={(e) =>
-                    setNewOptions({
-                      ...newOptions,
-                      [category.id]: e.target.value,
-                    })
-                  }
-                  className="h-6 text-xs min-w-[100px] max-w-[150px]"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && newOptions[category.id]?.trim()) {
-                      handleAddOption(category.id);
-                    }
-                  }}
-                  disabled={loadingStates.addingOption === category.id}
-                />
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => handleAddOption(category.id)}
-                  disabled={
-                    !newOptions[category.id]?.trim() ||
-                    loadingStates.addingOption === category.id
-                  }
-                  className="h-6 w-6 p-0 ml-1"
-                >
-                  {loadingStates.addingOption === category.id ? (
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                  ) : (
-                    <Plus className="h-3 w-3" />
-                  )}
-                </Button>
-                {loadingStates.addingOption === category.id && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => cancelOperation("addingOption")}
-                    className="h-6 w-6 p-0 ml-1"
-                    title="Cancel adding option"
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
-                )}
-              </div>
-            </div>
-          </div>
-        ))}
-
-        {tempCategory && editingCategory === tempCategory.id && (
-          <div
-            className="pb-3 border-b border-slate-100 dark:border-slate-800"
-            ref={newCategoryRef}
-          >
-            <div className="flex items-center gap-2 mb-2">
+    return (
+      <div
+        key={category.id}
+        ref={isEditing ? newCategoryRef : null}
+        className="rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 overflow-hidden"
+      >
+        {/* Card header */}
+        <div className="flex items-center justify-between px-3 py-1 bg-violet-100 dark:bg-violet-900/20 border-b border-violet-200 dark:border-violet-800/30">
+          {isEditing ? (
+            <div className="flex items-center gap-2 flex-1">
               <Input
-                value={tempCategory.name}
-                onChange={(e) =>
-                  setTempCategory({ ...tempCategory, name: e.target.value })
-                }
-                className="h-7 text-sm"
+                value={category.name}
+                onChange={(e) => {
+                  if (isTemp && tempCategory) {
+                    setTempCategory({ ...tempCategory, name: e.target.value });
+                  } else {
+                    setCategories(
+                      categories.map((cat) =>
+                        cat.id === category.id
+                          ? { ...cat, name: e.target.value }
+                          : cat,
+                      ),
+                    );
+                  }
+                }}
+                className="h-7 text-sm bg-white dark:bg-stone-900 border-stone-300"
                 autoFocus
-                disabled={loadingStates.savingCategory === tempCategory.id}
+                disabled={isSaving}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter")
+                    handleSaveCategory(category.id, category.name);
+                  if (e.key === "Escape") handleCancelEdit();
+                }}
               />
               <Button
                 size="sm"
                 variant="ghost"
-                onClick={() =>
-                  handleSaveCategory(tempCategory.id, tempCategory.name)
-                }
-                disabled={loadingStates.savingCategory === tempCategory.id}
-                className="h-7 w-7 p-0"
+                onClick={() => handleSaveCategory(category.id, category.name)}
+                disabled={isSaving}
+                className="h-7 w-7 p-0 text-violet-600 hover:text-violet-700 hover:bg-violet-50 dark:text-violet-400 dark:hover:bg-violet-900/30"
               >
-                {loadingStates.savingCategory === tempCategory.id ? (
+                {isSaving ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 ) : (
                   <Save className="h-3.5 w-3.5" />
@@ -468,19 +282,107 @@ export default function CategoryEditor() {
                 size="sm"
                 variant="ghost"
                 onClick={handleCancelEdit}
-                className="h-7 w-7 p-0"
-                title={
-                  loadingStates.savingCategory === tempCategory.id
-                    ? "Cancel operation"
-                    : "Cancel edit"
-                }
+                className="h-7 w-7 p-0 text-stone-400 hover:text-stone-600 dark:hover:text-stone-300"
               >
                 <X className="h-3.5 w-3.5" />
               </Button>
             </div>
-          </div>
-        )}
+          ) : (
+            <>
+              <h4 className="font-semibold text-xs text-stone-800 dark:text-stone-200">
+                {category.name}
+              </h4>
+              <div className="flex items-center gap-0.5">
+                <button
+                  onClick={() => handleEditCategory(category.id)}
+                  disabled={isDeleting}
+                  className="p-1 rounded text-stone-400 hover:text-violet-600 hover:bg-violet-50 dark:hover:text-violet-400 dark:hover:bg-violet-900/30 transition-colors"
+                  title="Edit category"
+                >
+                  <Edit className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  onClick={() => handleDeleteCategory(category.id)}
+                  disabled={isDeleting}
+                  className="p-1 rounded text-stone-400 hover:text-red-500 hover:bg-red-50 dark:hover:text-red-400 dark:hover:bg-red-900/30 transition-colors"
+                  title="Delete category"
+                >
+                  {isDeleting ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-3.5 w-3.5" />
+                  )}
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Card body — options as bubbles */}
+        <div className="px-3 py-2 flex flex-wrap gap-1.5 ">
+          {category.options.map((option, index) => {
+            const optDeleting =
+              loadingStates.deletingOption?.categoryId === category.id &&
+              loadingStates.deletingOption?.option === option;
+
+            return (
+              <span
+                key={`${category.id}-${option}-${index}`}
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-stone-100 dark:bg-stone-800 text-xs text-stone-600 dark:text-stone-300 group transition-colors hover:bg-stone-200 dark:hover:bg-stone-700"
+              >
+                {option}
+                {optDeleting ? (
+                  <Loader2 className="h-3 w-3 animate-spin text-stone-400" />
+                ) : (
+                  <button
+                    onClick={() => handleDeleteOption(category.id, option)}
+                    className="opacity-0 group-hover:opacity-100 p-0.5 rounded-full text-stone-300 hover:text-red-400 dark:text-stone-500 dark:hover:text-red-400 transition-all"
+                    title="Remove option"
+                  >
+                    <X className="h-2.5 w-2.5" />
+                  </button>
+                )}
+              </span>
+            );
+          })}
+
+          {/* Dotted add-option input */}
+          <Input
+            placeholder="+ Add option..."
+            value={newOptions[category.id] || ""}
+            onChange={(e) =>
+              setNewOptions({ ...newOptions, [category.id]: e.target.value })
+            }
+            className="h-5 text-xs w-28 bg-transparent border-dashed border-stone-300 dark:border-stone-600 rounded-full px-2 py-0.5 text-stone-500 dark:text-stone-400 placeholder:text-stone-400 dark:placeholder:text-stone-500 focus:border-violet-400 focus:bg-white dark:focus:bg-stone-900 focus:w-40 transition-all"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && newOptions[category.id]?.trim()) {
+                handleAddOption(category.id);
+              }
+            }}
+            disabled={loadingStates.addingOption === category.id}
+          />
+        </div>
       </div>
+    );
+  };
+
+  return (
+    <div className="space-y-2.5">
+      <div className="space-y-2.5">
+        {categories.map((category) => renderCategoryCard(category))}
+        {tempCategory &&
+          editingCategory === tempCategory.id &&
+          renderCategoryCard(tempCategory, true)}
+      </div>
+
+      <button
+        type="button"
+        onClick={handleAddCategory}
+        className="flex items-center gap-1 px-2 py-1 rounded-md text-xs text-violet-600 hover:bg-violet-50 dark:text-violet-400 dark:hover:bg-violet-900/30 transition-colors"
+      >
+        <Plus className="h-3.5 w-3.5" />
+        Add Category
+      </button>
     </div>
   );
 }

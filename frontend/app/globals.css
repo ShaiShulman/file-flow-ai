@@ -94,11 +94,11 @@ body {
 }
 
 .recently-affected {
-  background-color: #fef9c3 !important;
+  background-color: #ede9fe !important;
   animation: pulse-highlight 1.5s ease-in-out 3;
 }
 
 @keyframes pulse-highlight {
   0%, 100% { box-shadow: inset 3px 0 0 transparent; }
-  50% { box-shadow: inset 3px 0 0 #d97706; }
+  50% { box-shadow: inset 3px 0 0 #7c3aed; }
 }

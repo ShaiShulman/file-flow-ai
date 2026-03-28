@@ -7,8 +7,8 @@ import {
   Settings,
   Search,
   RefreshCw,
-  FilePlus,
   FileCode,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -65,22 +65,27 @@ export default function Toolbar({
   };
 
   return (
-    <div className="border-b border-stone-200 bg-stone-50 px-4 py-2 sticky top-0 z-10">
+    <div className="border-b border-violet-200 bg-gradient-to-r from-violet-600 via-violet-500 to-purple-500 px-4 py-2.5 sticky top-0 z-10">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div className="flex items-center justify-center w-8 h-8 bg-amber-600 rounded-lg">
-            <FilePlus className="h-4 w-4 text-white" />
+        <div className="flex items-center gap-3">
+          <div className="relative flex items-center justify-center w-10 h-10 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl shadow-lg shadow-orange-500/30">
+            <Sparkles className="h-5 w-5 text-white" />
+            <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-400 rounded-full border-2 border-violet-600" />
           </div>
-          <h1 className="text-lg font-bold text-stone-900 tracking-tight">FileFlow</h1>
-          <span className="bg-amber-100 text-amber-700 text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider">AI</span>
+          <div className="flex items-baseline gap-2">
+            <h1 className="text-xl font-bold text-white tracking-tight">
+              File<span className="text-amber-300">Flow</span>
+            </h1>
+            <span className="bg-amber-400/90 text-amber-950 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider shadow-sm">AI</span>
+          </div>
         </div>
 
         <div className="flex items-center gap-2 mx-4 flex-1 max-w-sm">
           <div className="relative w-full">
-            <Search className="absolute left-2.5 top-2 h-4 w-4 text-stone-400" />
+            <Search className="absolute left-2.5 top-2 h-4 w-4 text-violet-300" />
             <Input
               placeholder="Search documents..."
-              className="pl-8 h-8 bg-stone-100 border-stone-200 text-sm"
+              className="pl-8 h-8 bg-white/15 border-white/20 text-white placeholder:text-violet-200 text-sm focus:bg-white/25 focus:border-white/30 transition-colors"
             />
           </div>
         </div>
@@ -90,7 +95,7 @@ export default function Toolbar({
             <Button
               size="sm"
               onClick={() => setIsUploadOpen(true)}
-              className="bg-stone-900 text-white hover:bg-stone-800 h-8 text-xs"
+              className="bg-white text-violet-700 hover:bg-violet-50 h-8 text-xs font-medium shadow-sm"
             >
               <Upload className="h-3.5 w-3.5 mr-1.5" />
               Upload
@@ -101,7 +106,7 @@ export default function Toolbar({
               size="sm"
               onClick={onDownload}
               disabled={isDownloading}
-              className="bg-white border-stone-200 hover:bg-stone-50 h-8 text-xs"
+              className="bg-white/15 border-white/25 text-white hover:bg-white/25 h-8 text-xs"
             >
               {isDownloading ? (
                 <RefreshCw className="h-3.5 w-3.5 mr-1.5 animate-spin" />
@@ -116,13 +121,13 @@ export default function Toolbar({
               size="sm"
               onClick={onExport}
               disabled={!hasSession}
-              className="bg-white border-stone-200 hover:bg-stone-50 h-8 text-xs"
+              className="bg-white/15 border-white/25 text-white hover:bg-white/25 h-8 text-xs"
             >
               <FileCode className="h-3.5 w-3.5 mr-1.5" />
               Export
             </Button>
 
-            <div className="w-px h-6 bg-stone-200 mx-1" />
+            <div className="w-px h-6 bg-white/20 mx-1" />
 
             <Tooltip>
               <TooltipTrigger asChild>
@@ -131,9 +136,9 @@ export default function Toolbar({
                     id="exact-match"
                     checked={exactMatch}
                     onCheckedChange={handleExactMatchToggle}
-                    className="h-5 w-9 data-[state=checked]:bg-amber-600 [&>span]:h-4 [&>span]:w-4 [&>span]:data-[state=checked]:translate-x-4"
+                    className="h-5 w-9 data-[state=checked]:bg-white [&>span]:h-4 [&>span]:w-4 [&>span]:data-[state=checked]:translate-x-4 [&>span]:data-[state=checked]:bg-violet-600"
                   />
-                  <label htmlFor="exact-match" className="text-xs text-stone-600 cursor-pointer whitespace-nowrap">
+                  <label htmlFor="exact-match" className="text-xs text-white/80 cursor-pointer whitespace-nowrap">
                     Exact Match
                   </label>
                 </div>
@@ -143,16 +148,16 @@ export default function Toolbar({
               </TooltipContent>
             </Tooltip>
 
-            <div className="w-px h-6 bg-stone-200 mx-1" />
+            <div className="w-px h-6 bg-white/20 mx-1" />
 
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 hover:bg-stone-100"
+                  className="h-8 w-8 hover:bg-white/15 text-white/70 hover:text-white"
                 >
-                  <RefreshCw className="h-3.5 w-3.5 text-stone-500" />
+                  <RefreshCw className="h-3.5 w-3.5" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
@@ -165,9 +170,9 @@ export default function Toolbar({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 hover:bg-stone-100"
+                  className="h-8 w-8 hover:bg-white/15 text-white/70 hover:text-white"
                 >
-                  <Settings className="h-3.5 w-3.5 text-stone-500" />
+                  <Settings className="h-3.5 w-3.5" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>

@@ -46,3 +46,6 @@ backend/fileflow.db-wal
 screenshots
 perl.exe.stackdump
 debug.log
+.agents/skills/frontend-design/LICENSE.txt
+skills-lock.json
+.agents/skills/frontend-design/SKILL.md
