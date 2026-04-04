@@ -3,16 +3,17 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { FileText, History, Pencil, Clock } from "lucide-react"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import type { FileType } from "@/lib/types"
+import type { FileType, ActionRecord } from "@/lib/types"
 import MetadataEditor from "@/features/metadata/components/metadata-editor"
 import ChangesList from "@/features/changes/components/changes-list"
 
 interface FileInfoPanelProps {
   selectedFile: FileType | null
   sessionId: string | null
+  onRevertSuccess?: (action: ActionRecord, revertMessage: string) => void
 }
 
-export default function FileInfoPanel({ selectedFile, sessionId }: FileInfoPanelProps) {
+export default function FileInfoPanel({ selectedFile, sessionId, onRevertSuccess }: FileInfoPanelProps) {
   if (!selectedFile) {
     return (
       <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
@@ -48,7 +49,7 @@ export default function FileInfoPanel({ selectedFile, sessionId }: FileInfoPanel
 
         <TabsContent value="changes" className="flex-1 overflow-hidden mt-2">
           <ScrollArea className="h-full">
-            <ChangesList key={selectedFile.name} sessionId={sessionId} filterByFile={selectedFile.name} />
+            <ChangesList key={selectedFile.name} sessionId={sessionId} filterByFile={selectedFile.name} onRevertSuccess={onRevertSuccess} />
           </ScrollArea>
         </TabsContent>
       </Tabs>

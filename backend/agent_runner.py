@@ -1,5 +1,6 @@
 import uuid
-from dataclasses import dataclass
+import json
+from dataclasses import dataclass, field
 from typing import Optional, Dict, Any, List
 from langchain_core.messages.ai import AIMessage
 from tools import get_directory_tree
@@ -7,6 +8,15 @@ import config
 from graph import graph
 from action_types import ActionInfo
 from reducers import ClearList
+
+
+@dataclass
+class ClarificationRequest:
+    """A clarification question from the agent to the user."""
+
+    question: str
+    options: List[str] = field(default_factory=list)
+    allow_multiple: bool = False
 
 
 @dataclass
@@ -19,6 +29,7 @@ class RunResult:
     instruction_tokens: int
     actions: List[ActionInfo]
     last_affected_files: List[str]
+    clarification: Optional[ClarificationRequest] = None
 
 
 class AgentRunner:
@@ -218,15 +229,24 @@ class AgentRunner:
             self._print_debug(f"Instruction tokens used: {self.instruction_tokens}")
             self._print_debug(f"Analysis tokens used: {self.analysis_tokens}")
 
-            # Get the last AI message
+            # Get the last AI message (or the most recent one if graph ended on a ToolMessage)
             result_message = None
-            if (
-                "messages" in last_event
-                and last_event["messages"]
-                and isinstance(last_event["messages"][-1], AIMessage)
-            ):
-                result_message = last_event["messages"][-1].content
-                self._print_debug(result_message, "\033[92m")
+            if "messages" in last_event and last_event["messages"]:
+                for msg in reversed(last_event["messages"]):
+                    if isinstance(msg, AIMessage):
+                        content = msg.content
+                        # AIMessage content may be a list of blocks (text + tool_use)
+                        if isinstance(content, list):
+                            text_parts = [
+                                block.get("text", "") if isinstance(block, dict) else str(block)
+                                for block in content
+                                if not (isinstance(block, dict) and block.get("type") == "tool_use")
+                            ]
+                            content = " ".join(t for t in text_parts if t).strip()
+                        result_message = content if content else None
+                        break
+                if result_message:
+                    self._print_debug(result_message, "\033[92m")
 
             # Create state dictionary without messages
             state = {
@@ -243,6 +263,13 @@ class AgentRunner:
             if "categories" in last_event:
                 state["categories"] = last_event["categories"]
 
+            # Check if the agent asked a clarification question
+            clarification = self._extract_clarification(last_event.get("messages", []))
+
+            # If clarification was requested but no text message, use the question as the message
+            if clarification and not result_message:
+                result_message = clarification.question
+
             return RunResult(
                 result_message=result_message,
                 state=state,
@@ -250,6 +277,7 @@ class AgentRunner:
                 instruction_tokens=self.instruction_tokens,
                 actions=self.actions,
                 last_affected_files=self.last_affected_files,
+                clarification=clarification,
             )
 
         return RunResult(
@@ -260,3 +288,23 @@ class AgentRunner:
             actions=[],
             last_affected_files=[],
         )
+
+    def _extract_clarification(self, messages: list) -> Optional[ClarificationRequest]:
+        """Check if the graph ended on an ask_user tool call and extract clarification data."""
+        if not messages:
+            return None
+        # The graph stops immediately after ask_user (via route_after_tools),
+        # so it will be the last message only when clarification was just requested.
+        last_msg = messages[-1]
+        if hasattr(last_msg, "name") and last_msg.name == "ask_user" and last_msg.content:
+            try:
+                data = json.loads(last_msg.content) if isinstance(last_msg.content, str) else last_msg.content
+                if data.get("type") == "clarification":
+                    return ClarificationRequest(
+                        question=data["question"],
+                        options=data.get("options", []),
+                        allow_multiple=data.get("allow_multiple", False),
+                    )
+            except (json.JSONDecodeError, KeyError):
+                pass
+        return None

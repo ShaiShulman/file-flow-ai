@@ -4,7 +4,7 @@ from typing import Dict, Any, List, Optional
 import uvicorn
 import os
 
-from agent_runner import AgentRunner, RunResult
+from agent_runner import AgentRunner, RunResult, ClarificationRequest
 from action_types import ActionInfo
 from database import db
 from file_registry import FileRegistry
@@ -28,6 +28,14 @@ class MessageStats(BaseModel):
     duration_ms: int = 0
 
 
+class ClarificationQuestion(BaseModel):
+    """A clarification question from the agent to the user."""
+
+    question: str
+    options: List[str] = []
+    allow_multiple: bool = False
+
+
 class AgentResponse(BaseModel):
     """Model for agent responses."""
 
@@ -42,6 +50,7 @@ class AgentResponse(BaseModel):
     categories: Dict[str, Any]
     message_stats: Optional[MessageStats] = None
     file_id_map: Dict[str, str] = {}  # path -> stable file ID
+    clarification: Optional[ClarificationQuestion] = None
 
 
 class AgentAPI:
@@ -193,6 +202,15 @@ class AgentAPI:
         id_map = file_registry.get_id_map(session_id)
         file_id_map = {path: id_map[path] for path in all_paths if path in id_map}
 
+        # Convert clarification request if present
+        clarification = None
+        if result.clarification:
+            clarification = ClarificationQuestion(
+                question=result.clarification.question,
+                options=result.clarification.options,
+                allow_multiple=result.clarification.allow_multiple,
+            )
+
         return AgentResponse(
             message=result.result_message,
             working_directory=agent.working_directory,
@@ -205,6 +223,7 @@ class AgentAPI:
             categories=result.state.get("categories", {}),
             message_stats=message_stats,
             file_id_map=file_id_map,
+            clarification=clarification,
         )
 
     def delete_session(self, session_id: str) -> bool:

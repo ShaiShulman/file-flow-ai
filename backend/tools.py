@@ -31,6 +31,8 @@ from text_analysis import (
     update_metadata,
 )
 
+from clarification import ask_user
+
 from action_types import ActionInfo, ActionType
 
 # Safe tools are read-only operations that don't modify the file system
@@ -47,6 +49,7 @@ safe_tools = [
     analyze_document,
     get_metadata,
     update_metadata,
+    ask_user,
 ]
 
 # Sensitive tools are operations that modify the file system

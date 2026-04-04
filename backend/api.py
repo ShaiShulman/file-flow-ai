@@ -311,10 +311,30 @@ async def get_actions(session_id: str):
     return {"actions": actions}
 
 
+@app.get("/sessions/{session_id}/actions/{action_id}/check-revert")
+async def check_revert_endpoint(session_id: str, action_id: int):
+    """Pre-check whether an action can be reverted."""
+    from revert import check_revert_action
+
+    action = db.get_action(action_id)
+    if not action:
+        raise HTTPException(status_code=404, detail="Action not found")
+    if action["session_id"] != session_id:
+        raise HTTPException(status_code=400, detail="Action does not belong to this session")
+    if action["reverted"]:
+        return {"can_revert": False, "message": "Action already reverted", "description": ""}
+    if not action["revertable"]:
+        return {"can_revert": False, "message": "This action type cannot be reverted", "description": ""}
+
+    return check_revert_action(action)
+
+
 @app.post("/sessions/{session_id}/actions/{action_id}/revert")
 async def revert_action_endpoint(session_id: str, action_id: int):
     """Revert a specific action."""
     from revert import revert_action
+    from langchain_core.messages.ai import AIMessage
+    from graph import graph
 
     action = db.get_action(action_id)
     if not action:
@@ -329,6 +349,26 @@ async def revert_action_endpoint(session_id: str, action_id: int):
     result = revert_action(action)
     if result["success"]:
         db.mark_action_reverted(action_id)
+
+        # Build revert message for LLM context
+        revert_message = f"[System] Action reverted: {action.get('description', '')}. The filesystem has been restored to its previous state."
+
+        # Persist to DB messages table (for chat history)
+        db.save_message(session_id, "assistant", revert_message)
+
+        # Inject into LangGraph checkpoint (so LLM sees it on next turn)
+        if session_id in agent_api.sessions:
+            runner = agent_api.sessions[session_id]
+            try:
+                graph.update_state(
+                    runner.memory_config,
+                    {"messages": [AIMessage(content=revert_message)]},
+                )
+            except Exception as e:
+                # Non-fatal: revert succeeded even if checkpoint update fails
+                print(f"Warning: failed to update LangGraph checkpoint: {e}")
+
+        result["revert_message"] = revert_message
     return result
 
 

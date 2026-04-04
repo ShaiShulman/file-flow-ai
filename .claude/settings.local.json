@@ -68,7 +68,23 @@
       "Bash(.venv/Scripts/python -c \"import markdownify; print\\(markdownify.__version__\\)\")",
       "Bash(.venv/Scripts/python -c \"from markitdown import MarkItDown; md = MarkItDown\\(\\); print\\(''OK''\\)\")",
       "Bash(ls -d c:/Users/ShaiS/Documents/Repos/file-flow-ai/backend/.venv/Lib/site-packages/~arkitdown*)",
-      "Bash(.venv/Scripts/python -c \":*)"
+      "Bash(.venv/Scripts/python -c \":*)",
+      "Bash(python -c \"from graph import graph; print\\(dir\\(graph\\)\\)\")",
+      "Bash(ls c:/Users/ShaiS/Documents/Repos/file-flow-ai/backend/*.py)"
+    ]
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd c:/Users/ShaiS/Documents/Repos/file-flow-ai/frontend && for pid in $(netstat -ano 2>/dev/null | grep ':3000 ' | grep LISTENING | awk '{print $5}' | sort -u); do taskkill //F //PID $pid 2>/dev/null; done; sleep 1; pnpm dev &",
+            "statusMessage": "Restarting frontend dev server...",
+            "async": true
+          }
+        ]
+      }
     ]
   }
 }

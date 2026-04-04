@@ -8,6 +8,7 @@ import {
   Loader2,
   AlertCircle,
   FileText,
+  Undo2,
 } from "lucide-react";
 import { getFileIcon } from "@/lib/utils/file-icons";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
 import { useChat, type ChatMessage } from "@/features/chat/hooks";
 import FileBadge from "./file-badge";
+import ClarificationBubble from "./clarification-bubble";
 import type { FileReference } from "@/lib/types";
 
 // SVG icon strings for imperative badge creation (drag-drop)
@@ -155,6 +157,7 @@ interface ChatInterfaceProps {
     file_metadata: Record<string, any>;
   }) => void;
   onFileSelect?: (fileName: string) => void;
+  onChatReady?: (addRevertMessage: (content: string) => void) => void;
 }
 
 export default function ChatInterface({
@@ -164,17 +167,25 @@ export default function ChatInterface({
   onFolderStructureChange,
   onResponseData,
   onFileSelect,
+  onChatReady,
 }: ChatInterfaceProps) {
   const [isDragOver, setIsDragOver] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
-  const { chatState, sendMessage, stopGeneration, loadMessages } = useChat(
+  const { chatState, sendMessage, stopGeneration, loadMessages, addRevertMessage, answerClarification, declineClarification } = useChat(
     sessionId,
     updateAffectedFiles,
     onFolderStructureChange,
     onResponseData,
   );
+
+  // Expose addRevertMessage to parent
+  useEffect(() => {
+    if (onChatReady) {
+      onChatReady(addRevertMessage);
+    }
+  }, [onChatReady, addRevertMessage]);
 
   // Load messages from backend when session is restored (messages empty but session exists)
   useEffect(() => {
@@ -393,7 +404,26 @@ export default function ChatInterface({
             </div>
           ) : (
             <div className="space-y-4 pb-4">
-              {chatState.messages.map((message: ChatMessage) => (
+              {chatState.messages.map((message: ChatMessage) => {
+                // Compact revert notification
+                if (message.isRevert) {
+                  return (
+                    <div
+                      key={message.id}
+                      className="flex items-center gap-2 mx-auto max-w-[90%] px-3 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800"
+                    >
+                      <Undo2 className="h-3 w-3 text-amber-600 dark:text-amber-400 shrink-0" />
+                      <span className="text-xs text-amber-700 dark:text-amber-300 truncate">
+                        {message.content}
+                      </span>
+                      <span className="text-[10px] text-amber-400 dark:text-amber-600 shrink-0">
+                        {formatRelativeTime(message.timestamp)}
+                      </span>
+                    </div>
+                  );
+                }
+
+                return (
                 <div
                   key={message.id}
                   className={cn(
@@ -411,7 +441,9 @@ export default function ChatInterface({
                         ? "bg-stone-100 dark:bg-stone-800 rounded-2xl rounded-br-sm"
                         : message.isError
                           ? "bg-red-50 dark:bg-red-950 border border-red-300 dark:border-red-800 rounded-2xl rounded-bl-sm"
-                          : "bg-white dark:bg-stone-900 border border-stone-200 rounded-2xl rounded-bl-sm",
+                          : message.clarification
+                            ? "bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-2xl rounded-bl-sm"
+                            : "bg-white dark:bg-stone-900 border border-stone-200 rounded-2xl rounded-bl-sm",
                     )}
                   >
                     {message.isError && (
@@ -449,6 +481,17 @@ export default function ChatInterface({
                           </span>
                         </div>
                       )}
+
+                    {/* Clarification question UI */}
+                    {message.clarification && (
+                      <ClarificationBubble
+                        clarification={message.clarification}
+                        onAnswer={(answer) =>
+                          answerClarification(message.id, answer, workingDirectory)
+                        }
+                        onDecline={() => declineClarification(message.id)}
+                      />
+                    )}
                   </div>
 
                   {/* Timestamp + stats below bubble */}
@@ -480,7 +523,8 @@ export default function ChatInterface({
                     )}
                   </div>
                 </div>
-              ))}
+                );
+              })}
 
               {/* Processing indicator */}
               {chatState.isProcessing && (

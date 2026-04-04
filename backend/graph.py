@@ -99,7 +99,23 @@ builder.add_conditional_edges(
 )
 builder.add_edge("safe_tools", "process_output")
 builder.add_edge("sensitive_tools", "process_output")
-builder.add_edge("process_output", "assistant")
+
+
+def route_after_tools(state: State):
+    """After processing tool output, check if we should stop (e.g. ask_user) or loop back."""
+    messages = state.get("messages", [])
+    # Scan recent tool messages for ask_user — if found, stop the graph
+    for msg in reversed(messages):
+        if not hasattr(msg, "name"):
+            break  # Hit a non-tool message, stop scanning
+        if msg.name == "ask_user":
+            return END
+    return "assistant"
+
+
+builder.add_conditional_edges(
+    "process_output", route_after_tools, ["assistant", END]
+)
 
 memory = MemorySaver()
 

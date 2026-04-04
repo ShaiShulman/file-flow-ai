@@ -5,6 +5,7 @@ import {
   apiClient,
   type AgentResponse,
   type UserInput,
+  type ClarificationQuestion,
 } from "@/features/api/client";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -15,6 +16,7 @@ export interface ChatMessage {
   tokens?: number;
   timestamp: Date;
   isError?: boolean;
+  isRevert?: boolean;
   metadata?: {
     affected_files?: string[];
     last_affected_files?: string[];
@@ -28,6 +30,7 @@ export interface ChatMessage {
     cost_usd: number;
     duration_ms: number;
   };
+  clarification?: ClarificationQuestion;
 }
 
 export interface ProgressInfo {
@@ -131,6 +134,7 @@ export function useChat(
             categories: response.categories,
           },
           stats: response.message_stats || undefined,
+          clarification: response.clarification || undefined,
         };
 
         setChatState((prev) => ({
@@ -239,6 +243,20 @@ export function useChat(
     }
   }, [toast]);
 
+  const addRevertMessage = useCallback((content: string) => {
+    const message: ChatMessage = {
+      id: `revert-${Date.now()}`,
+      role: "assistant",
+      content,
+      timestamp: new Date(),
+      isRevert: true,
+    };
+    setChatState((prev) => ({
+      ...prev,
+      messages: [...prev.messages, message],
+    }));
+  }, []);
+
   const clearMessages = useCallback(() => {
     setChatState((prev) => ({
       ...prev,
@@ -296,6 +314,42 @@ export function useChat(
     }
   }, [sessionId]);
 
+  const answerClarification = useCallback(
+    (messageId: string, answer: string, workingDirectory?: string) => {
+      // Mark the clarification message as answered
+      setChatState((prev) => ({
+        ...prev,
+        messages: prev.messages.map((msg) =>
+          msg.id === messageId ? { ...msg, clarification: undefined } : msg
+        ),
+      }));
+      // Send the answer as a regular user message
+      sendMessage(answer, workingDirectory);
+    },
+    [sendMessage]
+  );
+
+  const declineClarification = useCallback(
+    (messageId: string) => {
+      // Mark the clarification message as answered (remove clarification UI)
+      setChatState((prev) => ({
+        ...prev,
+        messages: [
+          ...prev.messages.map((msg) =>
+            msg.id === messageId ? { ...msg, clarification: undefined } : msg
+          ),
+          {
+            id: `decline-${Date.now()}`,
+            role: "assistant" as const,
+            content: "Request cancelled.",
+            timestamp: new Date(),
+          },
+        ],
+      }));
+    },
+    []
+  );
+
   return {
     chatState,
     sendMessage,
@@ -303,5 +357,8 @@ export function useChat(
     clearMessages,
     loadMessages,
     getTokenStats,
+    addRevertMessage,
+    answerClarification,
+    declineClarification,
   };
 }

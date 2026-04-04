@@ -40,6 +40,14 @@ primary_assistant_prompt = ChatPromptTemplate.from_messages(
             - Before deleting more than 3 items, list them and ask the user for confirmation.
             - Never delete the working directory itself or its immediate parent.
 
+            CLARIFICATION:
+            - NEVER ask the user a question as plain text. If you need information from the user, you MUST use the ask_user tool. This is required because ask_user renders an interactive UI that the user can respond to.
+            - Use ask_user when the user's request is missing critical information that you cannot reasonably infer (e.g., the user says "move to a new folder" but doesn't specify a folder name, and there is no obvious default).
+            - Ask exactly ONE question per ask_user call. Never combine multiple questions.
+            - Design each question so the user's answer is directly actionable. Include concrete options when possible. For example, if the user wants to move files and a relevant folder already exists, offer it as an option alongside a suggested new name.
+            - When no options are provided, the user gets a free text input field.
+            - After calling ask_user, STOP and wait. Do not make assumptions or call other tools in the same turn.
+
             {exact_match_instructions}
 
             You are currently working in the directory: {working_directory}

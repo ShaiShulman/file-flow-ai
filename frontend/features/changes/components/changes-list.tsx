@@ -12,6 +12,16 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { useToast } from "@/components/ui/use-toast"
 import { apiClient } from "@/features/api/client"
 import type { ActionRecord } from "@/lib/types"
@@ -20,6 +30,7 @@ import { cn } from "@/lib/utils"
 interface ChangesListProps {
   sessionId: string | null
   filterByFile?: string
+  onRevertSuccess?: (action: ActionRecord, revertMessage: string) => void
 }
 
 function getIconBgClass(type: string) {
@@ -49,9 +60,19 @@ function getActionIcon(type: string) {
   return <FileText className={cls} />
 }
 
-export default function ChangesList({ sessionId, filterByFile }: ChangesListProps) {
+interface DialogState {
+  open: boolean
+  action: ActionRecord | null
+  canRevert: boolean
+  message: string
+  description: string
+}
+
+export default function ChangesList({ sessionId, filterByFile, onRevertSuccess }: ChangesListProps) {
   const [actions, setActions] = useState<ActionRecord[]>([])
   const [revertingId, setRevertingId] = useState<number | null>(null)
+  const [checkingId, setCheckingId] = useState<number | null>(null)
+  const [dialogState, setDialogState] = useState<DialogState | null>(null)
   const { toast } = useToast()
 
   const fetchActions = useCallback(async () => {
@@ -70,14 +91,42 @@ export default function ChangesList({ sessionId, filterByFile }: ChangesListProp
     return () => clearInterval(interval)
   }, [fetchActions])
 
-  const handleRevert = async (actionId: number) => {
+  const handleRevertClick = async (action: ActionRecord) => {
     if (!sessionId) return
-    setRevertingId(actionId)
+    setCheckingId(action.id)
     try {
-      const result = await apiClient.revertAction(sessionId, actionId)
+      const result = await apiClient.checkRevert(sessionId, action.id)
+      setDialogState({
+        open: true,
+        action,
+        canRevert: result.can_revert,
+        message: result.message,
+        description: result.description,
+      })
+    } catch (err) {
+      toast({
+        title: "Check Failed",
+        description: err instanceof Error ? err.message : "Unknown error",
+        variant: "destructive",
+      })
+    } finally {
+      setCheckingId(null)
+    }
+  }
+
+  const handleConfirmRevert = async () => {
+    if (!sessionId || !dialogState?.action) return
+    const action = dialogState.action
+    setDialogState(null)
+    setRevertingId(action.id)
+    try {
+      const result = await apiClient.revertAction(sessionId, action.id)
       if (result.success) {
         toast({ title: "Reverted", description: result.message })
         await fetchActions()
+        if (onRevertSuccess && result.revert_message) {
+          onRevertSuccess(action, result.revert_message)
+        }
       } else {
         toast({ title: "Revert Failed", description: result.message, variant: "destructive" })
       }
@@ -137,76 +186,102 @@ export default function ChangesList({ sessionId, filterByFile }: ChangesListProp
   }
 
   return (
-    <TooltipProvider delayDuration={300}>
-      <div className="space-y-0.5">
-        {filteredActions.map((action) => {
-          const canRevert = action.revertable && !action.reverted
-          const isReverting = revertingId === action.id
+    <>
+      <TooltipProvider delayDuration={300}>
+        <div className="space-y-0.5">
+          {filteredActions.map((action) => {
+            const canRevert = action.revertable && !action.reverted
+            const isReverting = revertingId === action.id
+            const isChecking = checkingId === action.id
 
-          const row = (
-            <div
-              key={action.id}
-              onClick={() => canRevert && !isReverting && handleRevert(action.id)}
-              className={cn(
-                "flex items-center gap-2 px-2 py-1.5 rounded-md group transition-all duration-150",
-                action.reverted && "opacity-40",
-                canRevert && !isReverting && "cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-950/30 hover:shadow-sm",
-              )}
-            >
-              {/* Icon area */}
-              <div className="relative w-[18px] h-[18px] flex items-center justify-center shrink-0">
-                {isReverting ? (
-                  <Loader2 className="h-3.5 w-3.5 text-blue-500 animate-spin" />
-                ) : (
-                  <>
-                    {/* Action type icon with colored bg */}
-                    <div className={cn(
-                      "w-[18px] h-[18px] rounded flex items-center justify-center transition-opacity duration-200",
-                      getIconBgClass(action.action_type),
-                      canRevert && "group-hover:opacity-0",
-                    )}>
-                      {getActionIcon(action.action_type)}
-                    </div>
-                    {/* Undo icon — no background, blue color */}
-                    {canRevert && (
-                      <Undo2 className="h-3.5 w-3.5 text-blue-500 absolute opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
-                    )}
-                  </>
+            const row = (
+              <div
+                key={action.id}
+                onClick={() => canRevert && !isReverting && !isChecking && handleRevertClick(action)}
+                className={cn(
+                  "flex items-center gap-2 px-2 py-1.5 rounded-md group transition-all duration-150",
+                  action.reverted && "opacity-40",
+                  canRevert && !isReverting && !isChecking && "cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-950/30 hover:shadow-sm",
+                )}
+              >
+                {/* Icon area */}
+                <div className="relative w-[18px] h-[18px] flex items-center justify-center shrink-0">
+                  {isReverting || isChecking ? (
+                    <Loader2 className="h-3.5 w-3.5 text-blue-500 animate-spin" />
+                  ) : (
+                    <>
+                      {/* Action type icon with colored bg */}
+                      <div className={cn(
+                        "w-[18px] h-[18px] rounded flex items-center justify-center transition-opacity duration-200",
+                        getIconBgClass(action.action_type),
+                        canRevert && "group-hover:opacity-0",
+                      )}>
+                        {getActionIcon(action.action_type)}
+                      </div>
+                      {/* Undo icon — no background, blue color */}
+                      {canRevert && (
+                        <Undo2 className="h-3.5 w-3.5 text-blue-500 absolute opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                      )}
+                    </>
+                  )}
+                </div>
+                <span className={cn(
+                  "text-xs truncate flex-1 transition-colors duration-150",
+                  action.reverted
+                    ? "line-through text-stone-400"
+                    : canRevert
+                      ? "group-hover:text-blue-700 dark:group-hover:text-blue-300"
+                      : "",
+                )}>
+                  {action.description}
+                </span>
+                <span className="text-[10px] text-stone-400 shrink-0">
+                  {new Date(action.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </span>
+                {action.reverted && (
+                  <span className="text-[10px] text-stone-400 italic shrink-0">reverted</span>
                 )}
               </div>
-              <span className={cn(
-                "text-xs truncate flex-1 transition-colors duration-150",
-                action.reverted
-                  ? "line-through text-stone-400"
-                  : canRevert
-                    ? "group-hover:text-blue-700 dark:group-hover:text-blue-300"
-                    : "",
-              )}>
-                {action.description}
-              </span>
-              <span className="text-[10px] text-stone-400 shrink-0">
-                {new Date(action.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </span>
-              {action.reverted && (
-                <span className="text-[10px] text-stone-400 italic shrink-0">reverted</span>
-              )}
-            </div>
-          )
-
-          if (canRevert) {
-            return (
-              <Tooltip key={action.id}>
-                <TooltipTrigger asChild>{row}</TooltipTrigger>
-                <TooltipContent side="left" className="text-xs">
-                  Click to revert
-                </TooltipContent>
-              </Tooltip>
             )
-          }
 
-          return row
-        })}
-      </div>
-    </TooltipProvider>
+            if (canRevert) {
+              return (
+                <Tooltip key={action.id}>
+                  <TooltipTrigger asChild>{row}</TooltipTrigger>
+                  <TooltipContent side="left" className="text-xs">
+                    Click to revert
+                  </TooltipContent>
+                </Tooltip>
+              )
+            }
+
+            return row
+          })}
+        </div>
+      </TooltipProvider>
+
+      <AlertDialog open={!!dialogState?.open} onOpenChange={(open) => { if (!open) setDialogState(null) }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {dialogState?.canRevert ? "Confirm Revert" : "Cannot Revert"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {dialogState?.canRevert
+                ? dialogState.description
+                : dialogState?.message}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            {dialogState?.canRevert && (
+              <AlertDialogAction onClick={handleConfirmRevert}>
+                Yes, Revert
+              </AlertDialogAction>
+            )}
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   )
 }

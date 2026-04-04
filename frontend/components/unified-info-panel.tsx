@@ -9,7 +9,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
-import type { FileType } from "@/lib/types"
+import type { FileType, ActionRecord } from "@/lib/types"
 import FileInfoPanel from "@/components/file-info-panel"
 import SessionPanel from "@/components/session-panel"
 
@@ -24,9 +24,10 @@ const tabs: { id: TabId; icon: typeof Eye; label: string }[] = [
 interface UnifiedInfoPanelProps {
   selectedFile: FileType | null
   sessionId: string | null
+  onRevertSuccess?: (action: ActionRecord, revertMessage: string) => void
 }
 
-export default function UnifiedInfoPanel({ selectedFile, sessionId }: UnifiedInfoPanelProps) {
+export default function UnifiedInfoPanel({ selectedFile, sessionId, onRevertSuccess }: UnifiedInfoPanelProps) {
   const [activeTab, setActiveTab] = useState<TabId>("details")
 
   return (
@@ -67,10 +68,10 @@ export default function UnifiedInfoPanel({ selectedFile, sessionId }: UnifiedInf
           </div>
         )}
         {activeTab === "details" && (
-          <FileInfoPanel selectedFile={selectedFile} sessionId={sessionId} />
+          <FileInfoPanel selectedFile={selectedFile} sessionId={sessionId} onRevertSuccess={onRevertSuccess} />
         )}
         {activeTab === "general" && (
-          <SessionPanel sessionId={sessionId} />
+          <SessionPanel sessionId={sessionId} onRevertSuccess={onRevertSuccess} />
         )}
       </div>
     </div>

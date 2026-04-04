@@ -242,6 +242,7 @@ class Database:
             return False
         revertable_types = {
             "move_file", "move_folder",
+            "copy_file", "copy_folder",
             "rename_file", "rename_folder",
             "create_file", "create_folder",
         }

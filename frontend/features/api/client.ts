@@ -12,6 +12,12 @@ export interface MessageStats {
   duration_ms: number;
 }
 
+export interface ClarificationQuestion {
+  question: string;
+  options: string[];
+  allow_multiple: boolean;
+}
+
 export interface AgentResponse {
   message?: string;
   working_directory: string;
@@ -24,6 +30,7 @@ export interface AgentResponse {
   categories: Record<string, any>;
   message_stats?: MessageStats;
   file_id_map: Record<string, string>; // path -> stable file ID
+  clarification?: ClarificationQuestion;
 }
 
 export interface TokenStats {
@@ -231,11 +238,20 @@ export class ApiClient {
     );
   }
 
+  async checkRevert(
+    sessionId: string,
+    actionId: number
+  ): Promise<{ can_revert: boolean; message: string; description: string }> {
+    return this.request<{ can_revert: boolean; message: string; description: string }>(
+      `/sessions/${sessionId}/actions/${actionId}/check-revert`
+    );
+  }
+
   async revertAction(
     sessionId: string,
     actionId: number
-  ): Promise<{ success: boolean; message: string }> {
-    return this.request<{ success: boolean; message: string }>(
+  ): Promise<{ success: boolean; message: string; revert_message?: string }> {
+    return this.request<{ success: boolean; message: string; revert_message?: string }>(
       `/sessions/${sessionId}/actions/${actionId}/revert`,
       { method: "POST" }
     );

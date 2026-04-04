@@ -6,12 +6,14 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import ChangesList from "@/features/changes/components/changes-list"
 import CategoryEditor from "@/features/categories/components/category-editor"
 import AnalyticsTab from "@/features/analytics/components/analytics-tab"
+import type { ActionRecord } from "@/lib/types"
 
 interface SessionPanelProps {
   sessionId: string | null
+  onRevertSuccess?: (action: ActionRecord, revertMessage: string) => void
 }
 
-export default function SessionPanel({ sessionId }: SessionPanelProps) {
+export default function SessionPanel({ sessionId, onRevertSuccess }: SessionPanelProps) {
   return (
     <div className="h-full flex flex-col overflow-hidden">
       <Tabs defaultValue="changes" className="flex-1 flex flex-col overflow-hidden">
@@ -32,7 +34,7 @@ export default function SessionPanel({ sessionId }: SessionPanelProps) {
 
         <TabsContent value="changes" className="flex-1 overflow-hidden mt-2">
           <ScrollArea className="h-full">
-            <ChangesList sessionId={sessionId} />
+            <ChangesList sessionId={sessionId} onRevertSuccess={onRevertSuccess} />
           </ScrollArea>
         </TabsContent>
 

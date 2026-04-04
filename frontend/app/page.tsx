@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import FileExplorer from "@/features/file-explorer/components/file-explorer";
 import ChatInterface from "@/features/chat/components/chat-interface";
@@ -8,7 +8,7 @@ import UnifiedInfoPanel from "@/components/unified-info-panel";
 import Toolbar from "@/components/toolbar";
 import { Toaster } from "@/components/ui/toaster";
 import { toast } from "@/components/ui/use-toast";
-import type { FileType, FolderType } from "@/lib/types";
+import type { FileType, FolderType, ActionRecord } from "@/lib/types";
 import { downloadFolderAsZip } from "@/lib/actions/folder-manager";
 import { SessionProvider, useSessionContext } from "@/features/session/context";
 import { rescanFolderStructure } from "@/lib/utils/folder-utils";
@@ -41,6 +41,7 @@ function HomeContent() {
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
   const restoredRef = useRef(false);
+  const addRevertMessageRef = useRef<((content: string) => void) | null>(null);
 
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -189,6 +190,10 @@ function HomeContent() {
     }
   };
 
+  const handleChatReady = useCallback((addRevertMessage: (content: string) => void) => {
+    addRevertMessageRef.current = addRevertMessage;
+  }, []);
+
   const handleFilesExtracted = (files: FolderType, folderId: string) => {
     setCurrentFolder(files);
     setCurrentFolderId(folderId);
@@ -234,6 +239,15 @@ function HomeContent() {
       });
     }
   };
+
+  const handleRevertSuccess = useCallback((_action: ActionRecord, revertMessage: string) => {
+    // Show revert notification in chat
+    if (addRevertMessageRef.current) {
+      addRevertMessageRef.current(revertMessage);
+    }
+    // Refresh folder structure
+    handleFolderStructureChange();
+  }, [handleFolderStructureChange]);
 
   // Create session when files are uploaded
   useEffect(() => {
@@ -311,6 +325,7 @@ function HomeContent() {
                 }
                 onResponseData={handleResponseData}
                 onFileSelect={handleFileSelectByName}
+                onChatReady={handleChatReady}
               />
             </Suspense>
           </ResizablePanel>
@@ -337,7 +352,7 @@ function HomeContent() {
               {/* Unified Info Panel (File Details + Session Info) */}
               <ResizablePanel defaultSize={55} minSize={20} className="overflow-hidden">
                 <Suspense fallback={<div className="flex items-center justify-center h-full text-muted-foreground">Loading...</div>}>
-                  <UnifiedInfoPanel selectedFile={selectedFile} sessionId={sessionState.sessionId} />
+                  <UnifiedInfoPanel selectedFile={selectedFile} sessionId={sessionState.sessionId} onRevertSuccess={handleRevertSuccess} />
                 </Suspense>
               </ResizablePanel>
             </ResizablePanelGroup>
