@@ -1,10 +1,13 @@
 "use client";
 
+import type React from "react";
 import { useState, useEffect } from "react";
-import type { FileType, FolderType } from "@/lib/types";
+import type { FileType, FolderType, FileReference } from "@/lib/types";
 import FolderItem from "./folder-item";
 import FileItem from "./file-item";
-import { Upload } from "lucide-react";
+import { Upload, FolderPlus, Folder } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import { useSessionContext } from "@/features/session/context";
 
 // Sample data constant for empty state
@@ -53,6 +56,10 @@ interface FileExplorerProps {
   currentFolder?: FolderType;
   fileChangeTypes?: Record<string, string>;
   allFileMetadata?: Record<string, Record<string, any>>;
+  onDeleteItem?: (path: string, name: string, itemType: "file" | "folder") => Promise<void>;
+  onMoveItem?: (sourcePath: string, destPath: string, name: string) => Promise<void>;
+  onCreateFolder?: (name: string, parentPath?: string) => Promise<void>;
+  onAddToChat?: (fileRef: FileReference, isFolder?: boolean) => void;
 }
 
 export default function FileExplorer({
@@ -61,6 +68,10 @@ export default function FileExplorer({
   currentFolder,
   fileChangeTypes = {},
   allFileMetadata = {},
+  onDeleteItem,
+  onMoveItem,
+  onCreateFolder,
+  onAddToChat,
 }: FileExplorerProps) {
   const [fileSystem, setFileSystem] = useState<FolderType | null>(
     initialData || null
@@ -71,6 +82,9 @@ export default function FileExplorer({
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(
     new Set(["root"])
   );
+  const [isCreatingRootFolder, setIsCreatingRootFolder] = useState(false);
+  const [newRootFolderName, setNewRootFolderName] = useState("");
+  const [isRootDragOver, setIsRootDragOver] = useState(false);
 
   // Get affected files from session context
   const { sessionState } = useSessionContext();
@@ -169,9 +183,105 @@ export default function FileExplorer({
     );
   }
 
+  const handleCreateRootFolder = () => {
+    const trimmed = newRootFolderName.trim();
+    if (trimmed && onCreateFolder) {
+      onCreateFolder(trimmed);
+    }
+    setIsCreatingRootFolder(false);
+    setNewRootFolderName("");
+  };
+
+  // Root-level drop handlers — dropping here moves to root
+  const handleRootDragOver = (e: React.DragEvent) => {
+    if (
+      onMoveItem &&
+      (e.dataTransfer.types.includes("application/fileflow-file") ||
+        e.dataTransfer.types.includes("application/fileflow-folder"))
+    ) {
+      e.preventDefault();
+      setIsRootDragOver(true);
+    }
+  };
+
+  const handleRootDragLeave = (e: React.DragEvent) => {
+    // Only clear when leaving the container itself, not entering a child
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      setIsRootDragOver(false);
+    }
+  };
+
+  const handleRootDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsRootDragOver(false);
+    if (!onMoveItem || !fileSystem) return;
+
+    const fileData = e.dataTransfer.getData("application/fileflow-file");
+    const folderData = e.dataTransfer.getData("application/fileflow-folder");
+    const data = fileData || folderData;
+    if (!data) return;
+
+    try {
+      const parsed = JSON.parse(data);
+      // Already at root — skip
+      const sep = Math.max(parsed.path.lastIndexOf("/"), parsed.path.lastIndexOf("\\"));
+      const parentPath = sep > 0 ? parsed.path.substring(0, sep) : "";
+      if (parentPath === "" || parentPath === fileSystem.path) return;
+
+      onMoveItem(parsed.path, fileSystem.path, parsed.name);
+    } catch {
+      // Invalid drag data
+    }
+  };
+
   // Render children directly (skip root folder)
   return (
-    <div className="h-full overflow-auto">
+    <div
+      className={cn("h-full overflow-auto", isRootDragOver && "ring-2 ring-inset ring-violet-400 bg-violet-50/50 dark:bg-violet-900/20")}
+      onDragOver={handleRootDragOver}
+      onDragLeave={handleRootDragLeave}
+      onDrop={handleRootDrop}
+    >
+      {/* Top bar with New Folder button */}
+      {onCreateFolder && (
+        <div className="flex items-center justify-end px-2 py-1 border-b border-stone-200 dark:border-stone-700">
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-6 text-xs gap-1"
+            onClick={() => setIsCreatingRootFolder(true)}
+          >
+            <FolderPlus className="h-3 w-3" />
+            New Folder
+          </Button>
+        </div>
+      )}
+
+      {/* Inline input for creating root-level folder */}
+      {isCreatingRootFolder && (
+        <div className="flex items-center gap-1 py-0.5 px-2">
+          <Folder
+            className="h-3.5 w-3.5 flex-shrink-0"
+            style={{ color: "#7c3aed", fill: "#7c3aed" }}
+          />
+          <input
+            autoFocus
+            className="text-xs bg-transparent border-b border-violet-400 outline-none px-1 py-0.5 w-32"
+            placeholder="Folder name..."
+            value={newRootFolderName}
+            onChange={(e) => setNewRootFolderName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleCreateRootFolder();
+              if (e.key === "Escape") {
+                setIsCreatingRootFolder(false);
+                setNewRootFolderName("");
+              }
+            }}
+            onBlur={handleCreateRootFolder}
+          />
+        </div>
+      )}
+
       {fileSystem.children.map((child) => {
         if (child.type === "folder") {
           return (
@@ -185,6 +295,10 @@ export default function FileExplorer({
               onSelectFile={handleSelectFile}
               fileChangeTypes={fileChangeTypes}
               allFileMetadata={allFileMetadata}
+              onDeleteItem={onDeleteItem}
+              onMoveItem={onMoveItem}
+              onCreateFolder={onCreateFolder}
+              onAddToChat={onAddToChat}
             />
           );
         } else {
@@ -208,6 +322,9 @@ export default function FileExplorer({
               changeType={changeType}
               fileMetadata={fileMeta}
               isRecentlyAffected={isRecentlyAffected}
+              onDelete={onDeleteItem ? (file) => onDeleteItem(file.path, file.name, "file") : undefined}
+              onAddToChat={onAddToChat ? (file) => onAddToChat({ name: file.name, path: file.path, id: file.id }, false) : undefined}
+              onMoveItem={onMoveItem}
             />
           );
         }

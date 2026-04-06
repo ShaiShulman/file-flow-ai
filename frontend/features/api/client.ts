@@ -48,6 +48,13 @@ export interface CategoryResponse {
   values?: string[];
 }
 
+export interface FileActionResponse {
+  success: boolean;
+  message: string;
+  action: Record<string, any>;
+  affected_files: string[];
+}
+
 export class ApiClient {
   private baseUrl: string;
 
@@ -343,6 +350,49 @@ export class ApiClient {
   async getManifest(sessionId: string): Promise<Record<string, any>> {
     return this.request<Record<string, any>>(
       `/sessions/${sessionId}/manifest`
+    );
+  }
+
+  // Manual file operations
+  async deleteFile(
+    sessionId: string,
+    path: string,
+    itemType?: string
+  ): Promise<FileActionResponse> {
+    return this.request<FileActionResponse>(
+      `/sessions/${sessionId}/files/delete`,
+      {
+        method: "POST",
+        body: JSON.stringify({ path, item_type: itemType }),
+      }
+    );
+  }
+
+  async moveFile(
+    sessionId: string,
+    sourcePath: string,
+    destPath: string
+  ): Promise<FileActionResponse> {
+    return this.request<FileActionResponse>(
+      `/sessions/${sessionId}/files/move`,
+      {
+        method: "POST",
+        body: JSON.stringify({ source_path: sourcePath, dest_path: destPath }),
+      }
+    );
+  }
+
+  async createFolder(
+    sessionId: string,
+    name: string,
+    parentPath?: string
+  ): Promise<FileActionResponse> {
+    return this.request<FileActionResponse>(
+      `/sessions/${sessionId}/files/create-folder`,
+      {
+        method: "POST",
+        body: JSON.stringify({ name, parent_path: parentPath }),
+      }
     );
   }
 }
