@@ -10,6 +10,8 @@ from api_server import AgentAPI, UserInput, AgentResponse, file_registry
 from categories import categories_manager
 from path_utils import get_session_working_directory
 from database import db
+from folder_operations import _delete_single_item, _move_single_item, _get_full_path
+from action_types import ActionInfo, ActionType
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -370,6 +372,171 @@ async def revert_action_endpoint(session_id: str, action_id: int):
 
         result["revert_message"] = revert_message
     return result
+
+
+# ── Manual File Operation endpoints ──
+
+
+class DeleteFileRequest(BaseModel):
+    path: str
+    item_type: Optional[str] = None
+
+
+class MoveFileRequest(BaseModel):
+    source_path: str
+    dest_path: str
+
+
+class CreateFolderRequest(BaseModel):
+    name: str
+    parent_path: Optional[str] = None
+
+
+def _inject_user_action_message(session_id: str, message_text: str):
+    """Persist a user-action message to DB and inject into LangGraph checkpoint."""
+    db.save_message(session_id, "user", message_text)
+
+    if session_id in agent_api.sessions:
+        from langchain_core.messages.human import HumanMessage
+        from graph import graph
+
+        runner = agent_api.sessions[session_id]
+        try:
+            graph.update_state(
+                runner.memory_config,
+                {"messages": [HumanMessage(content=message_text)]},
+            )
+        except Exception as e:
+            print(f"Warning: failed to update LangGraph checkpoint: {e}")
+
+
+def _normalize_path(path: str) -> str:
+    """Normalize a path from the frontend.
+
+    Absolute paths (e.g. C:\\... or /home/...) are passed through as-is.
+    Relative paths with a leading slash (e.g. /Folder1) get the slash stripped
+    so os.path.join resolves relative to the working directory.
+    """
+    if not path:
+        return path
+    # If it looks like an absolute path (drive letter or UNC on Windows), keep it
+    if os.path.isabs(path) and (len(path) > 1 and path[1] == ":"):
+        return path
+    return path.lstrip("/")
+
+
+@app.post("/sessions/{session_id}/files/delete")
+async def manual_delete_file(session_id: str, request: DeleteFileRequest):
+    """Delete a file or folder directly (bypassing LLM agent)."""
+    session = db.get_session(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail=f"Session {session_id} not found")
+
+    working_directory = session["working_directory"]
+    clean_path = _normalize_path(request.path)
+
+    result = await asyncio.to_thread(
+        _delete_single_item, working_directory, clean_path, request.item_type
+    )
+
+    if not result.get("action"):
+        raise HTTPException(status_code=400, detail=result.get("message", "Delete failed"))
+
+    action = result["action"]
+    db.save_action(
+        session_id,
+        action["action_type"],
+        action["item_name"],
+        source_path=action.get("source_path"),
+        description=action.get("description", result["message"]),
+    )
+
+    await asyncio.to_thread(file_registry.scan_and_register, session_id, working_directory)
+
+    item_name = os.path.basename(request.path)
+    message_text = f"[User Action] Deleted '{item_name}'"
+    _inject_user_action_message(session_id, message_text)
+
+    return {"success": True, "message": result["message"], "action": action, "affected_files": result["affected_files"]}
+
+
+@app.post("/sessions/{session_id}/files/move")
+async def manual_move_file(session_id: str, request: MoveFileRequest):
+    """Move a file or folder directly (bypassing LLM agent)."""
+    session = db.get_session(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail=f"Session {session_id} not found")
+
+    working_directory = session["working_directory"]
+    clean_source = _normalize_path(request.source_path)
+    clean_dest = _normalize_path(request.dest_path) or "."
+
+    result = await asyncio.to_thread(
+        _move_single_item, working_directory, clean_source, clean_dest
+    )
+
+    if not result.get("action"):
+        raise HTTPException(status_code=400, detail=result.get("message", "Move failed"))
+
+    action = result["action"]
+    db.save_action(
+        session_id,
+        action["action_type"],
+        action["item_name"],
+        source_path=action.get("source_path"),
+        target_path=action.get("target_path"),
+        description=action.get("description", result["message"]),
+    )
+
+    await asyncio.to_thread(file_registry.scan_and_register, session_id, working_directory)
+
+    item_name = os.path.basename(request.source_path)
+    dest_name = request.dest_path.rstrip("/").split("/")[-1] or "root"
+    message_text = f"[User Action] Moved '{item_name}' to '{dest_name}'"
+    _inject_user_action_message(session_id, message_text)
+
+    return {"success": True, "message": result["message"], "action": action, "affected_files": result["affected_files"]}
+
+
+@app.post("/sessions/{session_id}/files/create-folder")
+async def manual_create_folder(session_id: str, request: CreateFolderRequest):
+    """Create a new folder directly (bypassing LLM agent)."""
+    session = db.get_session(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail=f"Session {session_id} not found")
+
+    working_directory = session["working_directory"]
+
+    clean_parent = _normalize_path(request.parent_path) if request.parent_path else None
+    parent = _get_full_path(working_directory, clean_parent) if clean_parent else working_directory
+    folder_path = os.path.join(parent, request.name)
+
+    if os.path.exists(folder_path):
+        raise HTTPException(status_code=400, detail=f"Folder '{request.name}' already exists")
+
+    os.makedirs(folder_path, exist_ok=True)
+
+    action_info = ActionInfo(
+        action_type=ActionType.CREATE_FOLDER,
+        item_name=request.name,
+        target_path=folder_path,
+    )
+    action = action_info.to_dict()
+
+    db.save_action(
+        session_id,
+        action["action_type"],
+        action["item_name"],
+        target_path=action.get("target_path"),
+        description=action.get("description", f"Created folder '{request.name}'"),
+    )
+
+    await asyncio.to_thread(file_registry.scan_and_register, session_id, working_directory)
+
+    message_text = f"[User Action] Created folder '{request.name}'"
+    _inject_user_action_message(session_id, message_text)
+
+    return {"success": True, "message": f"Created folder '{request.name}'", "action": action, "affected_files": [folder_path]}
 
 
 # ── File Metadata endpoints ──

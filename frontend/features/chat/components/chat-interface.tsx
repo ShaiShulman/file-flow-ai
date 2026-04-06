@@ -9,6 +9,7 @@ import {
   AlertCircle,
   FileText,
   Undo2,
+  MousePointerClick,
 } from "lucide-react";
 import { getFileIcon } from "@/lib/utils/file-icons";
 import { Button } from "@/components/ui/button";
@@ -157,7 +158,11 @@ interface ChatInterfaceProps {
     file_metadata: Record<string, any>;
   }) => void;
   onFileSelect?: (fileName: string) => void;
-  onChatReady?: (addRevertMessage: (content: string) => void) => void;
+  onChatReady?: (callbacks: {
+    addRevertMessage: (content: string) => void;
+    addUserActionMessage: (content: string) => void;
+    insertFileBadge: (fileRef: FileReference, isFolder?: boolean) => void;
+  }) => void;
 }
 
 export default function ChatInterface({
@@ -173,19 +178,12 @@ export default function ChatInterface({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
-  const { chatState, sendMessage, stopGeneration, loadMessages, addRevertMessage, answerClarification, declineClarification } = useChat(
+  const { chatState, sendMessage, stopGeneration, loadMessages, addRevertMessage, addUserActionMessage, answerClarification, declineClarification } = useChat(
     sessionId,
     updateAffectedFiles,
     onFolderStructureChange,
     onResponseData,
   );
-
-  // Expose addRevertMessage to parent
-  useEffect(() => {
-    if (onChatReady) {
-      onChatReady(addRevertMessage);
-    }
-  }, [onChatReady, addRevertMessage]);
 
   // Load messages from backend when session is restored (messages empty but session exists)
   useEffect(() => {
@@ -346,6 +344,13 @@ export default function ChatInterface({
     [],
   );
 
+  // Expose chat callbacks to parent (must be after insertFileBadge definition)
+  useEffect(() => {
+    if (onChatReady) {
+      onChatReady({ addRevertMessage, addUserActionMessage, insertFileBadge });
+    }
+  }, [onChatReady, addRevertMessage, addUserActionMessage, insertFileBadge]);
+
   // Drag-and-drop handlers (accept both files and folders)
   const handleDragOver = (e: React.DragEvent) => {
     if (
@@ -417,6 +422,24 @@ export default function ChatInterface({
                         {message.content}
                       </span>
                       <span className="text-[10px] text-amber-400 dark:text-amber-600 shrink-0">
+                        {formatRelativeTime(message.timestamp)}
+                      </span>
+                    </div>
+                  );
+                }
+
+                // Compact user action notification
+                if (message.isUserAction) {
+                  return (
+                    <div
+                      key={message.id}
+                      className="flex items-center gap-2 mx-auto max-w-[90%] px-3 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800"
+                    >
+                      <MousePointerClick className="h-3 w-3 text-slate-500 dark:text-slate-400 shrink-0" />
+                      <span className="text-xs text-slate-600 dark:text-slate-300 truncate">
+                        {message.content}
+                      </span>
+                      <span className="text-[10px] text-slate-400 dark:text-slate-600 shrink-0">
                         {formatRelativeTime(message.timestamp)}
                       </span>
                     </div>

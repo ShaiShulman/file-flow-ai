@@ -17,6 +17,7 @@ export interface ChatMessage {
   timestamp: Date;
   isError?: boolean;
   isRevert?: boolean;
+  isUserAction?: boolean;
   metadata?: {
     affected_files?: string[];
     last_affected_files?: string[];
@@ -257,6 +258,20 @@ export function useChat(
     }));
   }, []);
 
+  const addUserActionMessage = useCallback((content: string) => {
+    const message: ChatMessage = {
+      id: `user-action-${Date.now()}`,
+      role: "user",
+      content,
+      timestamp: new Date(),
+      isUserAction: true,
+    };
+    setChatState((prev) => ({
+      ...prev,
+      messages: [...prev.messages, message],
+    }));
+  }, []);
+
   const clearMessages = useCallback(() => {
     setChatState((prev) => ({
       ...prev,
@@ -271,21 +286,28 @@ export function useChat(
     try {
       const { messages } = await apiClient.getSessionMessages(sessionId);
       const chatMessages: ChatMessage[] = messages.map(
-        (msg: Record<string, any>, index: number) => ({
-          id: `restored-${index}`,
-          role: msg.role as "user" | "assistant",
-          content: msg.content || "",
-          timestamp: new Date(msg.created_at),
-          stats:
-            msg.role === "assistant" && (msg.input_tokens || msg.output_tokens)
-              ? {
-                  input_tokens: msg.input_tokens || 0,
-                  output_tokens: msg.output_tokens || 0,
-                  cost_usd: msg.cost_usd || 0,
-                  duration_ms: msg.duration_ms || 0,
-                }
-              : undefined,
-        })
+        (msg: Record<string, any>, index: number) => {
+          const content = msg.content || "";
+          const isUserAction = content.startsWith("[User Action]");
+          const isRevert = content.startsWith("[System] Action reverted");
+          return {
+            id: `restored-${index}`,
+            role: msg.role as "user" | "assistant",
+            content: isUserAction ? content.replace("[User Action] ", "") : content,
+            timestamp: new Date(msg.created_at),
+            isUserAction,
+            isRevert,
+            stats:
+              msg.role === "assistant" && (msg.input_tokens || msg.output_tokens)
+                ? {
+                    input_tokens: msg.input_tokens || 0,
+                    output_tokens: msg.output_tokens || 0,
+                    cost_usd: msg.cost_usd || 0,
+                    duration_ms: msg.duration_ms || 0,
+                  }
+                : undefined,
+          };
+        }
       );
 
       setChatState((prev) => ({
@@ -358,6 +380,7 @@ export function useChat(
     loadMessages,
     getTokenStats,
     addRevertMessage,
+    addUserActionMessage,
     answerClarification,
     declineClarification,
   };

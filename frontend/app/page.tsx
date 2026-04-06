@@ -8,7 +8,7 @@ import UnifiedInfoPanel from "@/components/unified-info-panel";
 import Toolbar from "@/components/toolbar";
 import { Toaster } from "@/components/ui/toaster";
 import { toast } from "@/components/ui/use-toast";
-import type { FileType, FolderType, ActionRecord } from "@/lib/types";
+import type { FileType, FolderType, ActionRecord, FileReference } from "@/lib/types";
 import { downloadFolderAsZip } from "@/lib/actions/folder-manager";
 import { SessionProvider, useSessionContext } from "@/features/session/context";
 import { rescanFolderStructure } from "@/lib/utils/folder-utils";
@@ -42,6 +42,8 @@ function HomeContent() {
   const [isRestoring, setIsRestoring] = useState(false);
   const restoredRef = useRef(false);
   const addRevertMessageRef = useRef<((content: string) => void) | null>(null);
+  const addUserActionMessageRef = useRef<((content: string) => void) | null>(null);
+  const insertFileBadgeRef = useRef<((fileRef: FileReference, isFolder?: boolean) => void) | null>(null);
 
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -190,8 +192,14 @@ function HomeContent() {
     }
   };
 
-  const handleChatReady = useCallback((addRevertMessage: (content: string) => void) => {
-    addRevertMessageRef.current = addRevertMessage;
+  const handleChatReady = useCallback((callbacks: {
+    addRevertMessage: (content: string) => void;
+    addUserActionMessage: (content: string) => void;
+    insertFileBadge: (fileRef: FileReference, isFolder?: boolean) => void;
+  }) => {
+    addRevertMessageRef.current = callbacks.addRevertMessage;
+    addUserActionMessageRef.current = callbacks.addUserActionMessage;
+    insertFileBadgeRef.current = callbacks.insertFileBadge;
   }, []);
 
   const handleFilesExtracted = (files: FolderType, folderId: string) => {
@@ -249,6 +257,50 @@ function HomeContent() {
     handleFolderStructureChange();
   }, [handleFolderStructureChange]);
 
+  // Manual file action handlers
+  const handleDeleteItem = useCallback(async (path: string, name: string, itemType: "file" | "folder") => {
+    if (!sessionState.sessionId) return;
+    try {
+      await apiClient.deleteFile(sessionState.sessionId, path, itemType);
+      addUserActionMessageRef.current?.(`Deleted ${itemType === "folder" ? "folder" : ""} '${name}'`);
+      updateFileChangeTypes({ [path]: itemType === "folder" ? "delete_folder" : "delete_file" });
+      handleFolderStructureChange();
+      toast({ title: "Deleted", description: `${name} has been deleted` });
+    } catch (error) {
+      toast({ title: "Delete Failed", description: error instanceof Error ? error.message : "Failed to delete item", variant: "destructive" });
+    }
+  }, [sessionState.sessionId, handleFolderStructureChange, updateFileChangeTypes, toast]);
+
+  const handleMoveItem = useCallback(async (sourcePath: string, destPath: string, name: string) => {
+    if (!sessionState.sessionId) return;
+    try {
+      await apiClient.moveFile(sessionState.sessionId, sourcePath, destPath);
+      const destName = destPath.split("/").filter(Boolean).pop() || "root";
+      addUserActionMessageRef.current?.(`Moved '${name}' to '${destName}'`);
+      updateFileChangeTypes({ [sourcePath]: "move_file" });
+      handleFolderStructureChange();
+      toast({ title: "Moved", description: `${name} has been moved` });
+    } catch (error) {
+      toast({ title: "Move Failed", description: error instanceof Error ? error.message : "Failed to move item", variant: "destructive" });
+    }
+  }, [sessionState.sessionId, handleFolderStructureChange, updateFileChangeTypes, toast]);
+
+  const handleCreateFolder = useCallback(async (name: string, parentPath?: string) => {
+    if (!sessionState.sessionId) return;
+    try {
+      await apiClient.createFolder(sessionState.sessionId, name, parentPath);
+      addUserActionMessageRef.current?.(`Created folder '${name}'`);
+      handleFolderStructureChange();
+      toast({ title: "Folder Created", description: `'${name}' has been created` });
+    } catch (error) {
+      toast({ title: "Create Failed", description: error instanceof Error ? error.message : "Failed to create folder", variant: "destructive" });
+    }
+  }, [sessionState.sessionId, handleFolderStructureChange, toast]);
+
+  const handleAddToChat = useCallback((fileRef: FileReference, isFolder?: boolean) => {
+    insertFileBadgeRef.current?.(fileRef, isFolder);
+  }, []);
+
   // Create session when files are uploaded
   useEffect(() => {
     if (currentFolderId && !sessionState.sessionId && !sessionState.isCreating) {
@@ -275,7 +327,7 @@ function HomeContent() {
       toast({ title: "Download Started", description: "Creating ZIP file..." });
 
       const zipContent = await downloadFolderAsZip(currentFolderId, sessionState.sessionId);
-      const blob = new Blob([zipContent], { type: "application/zip" });
+      const blob = new Blob([zipContent as Uint8Array<ArrayBuffer>], { type: "application/zip" });
       const url = URL.createObjectURL(blob);
 
       const a = document.createElement("a");
@@ -343,6 +395,10 @@ function HomeContent() {
                     currentFolder={currentFolder}
                     fileChangeTypes={sessionState.fileChangeTypes}
                     allFileMetadata={sessionState.allFileMetadata}
+                    onDeleteItem={handleDeleteItem}
+                    onMoveItem={handleMoveItem}
+                    onCreateFolder={handleCreateFolder}
+                    onAddToChat={handleAddToChat}
                   />
                 </Suspense>
               </ResizablePanel>
