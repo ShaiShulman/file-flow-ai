@@ -223,12 +223,12 @@ export default function FileExplorer({
 
     try {
       const parsed = JSON.parse(data);
-      // Already at root — skip
-      const sep = Math.max(parsed.path.lastIndexOf("/"), parsed.path.lastIndexOf("\\"));
+      // Already at root — skip (paths are relative with forward slashes)
+      const sep = parsed.path.lastIndexOf("/");
       const parentPath = sep > 0 ? parsed.path.substring(0, sep) : "";
-      if (parentPath === "" || parentPath === fileSystem.path) return;
+      if (parentPath === "") return;
 
-      onMoveItem(parsed.path, fileSystem.path, parsed.name);
+      onMoveItem(parsed.path, "", parsed.name);
     } catch {
       // Invalid drag data
     }

@@ -126,9 +126,9 @@ export default function FolderItem({
     if (data) {
       try {
         const parsed = JSON.parse(data);
-        // Don't move to same parent
-        const sep = Math.max(parsed.path.lastIndexOf("/"), parsed.path.lastIndexOf("\\"));
-        const parentPath = sep > 0 ? parsed.path.substring(0, sep) : parsed.path;
+        // Don't move to same parent (paths are relative with forward slashes)
+        const sep = parsed.path.lastIndexOf("/");
+        const parentPath = sep > 0 ? parsed.path.substring(0, sep) : "";
         if (parentPath === folder.path) return;
         // Don't move folder into itself
         if (folderData && folder.path.startsWith(parsed.path)) return;

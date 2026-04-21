@@ -40,6 +40,11 @@ primary_assistant_prompt = ChatPromptTemplate.from_messages(
             - Before deleting more than 3 items, list them and ask the user for confirmation.
             - Never delete the working directory itself or its immediate parent.
 
+            FILE REFERENCES:
+            - When the user's message contains {{file:path}} markers, these are files or folders they dragged into the chat from the file explorer.
+            - The path inside {{file:}} is relative to the working directory. Use it directly in tool calls.
+            - Example: "analyze {{file:Legal/report.pdf}}" → call analyze_document(file_path="Legal/report.pdf")
+
             CLARIFICATION:
             - NEVER ask the user a question as plain text. If you need information from the user, you MUST use the ask_user tool. This is required because ask_user renders an interactive UI that the user can respond to.
             - Use ask_user when the user's request is missing critical information that you cannot reasonably infer (e.g., the user says "move to a new folder" but doesn't specify a folder name, and there is no obvious default).

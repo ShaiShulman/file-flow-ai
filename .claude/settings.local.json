@@ -70,7 +70,11 @@
       "Bash(ls -d c:/Users/ShaiS/Documents/Repos/file-flow-ai/backend/.venv/Lib/site-packages/~arkitdown*)",
       "Bash(.venv/Scripts/python -c \":*)",
       "Bash(python -c \"from graph import graph; print\\(dir\\(graph\\)\\)\")",
-      "Bash(ls c:/Users/ShaiS/Documents/Repos/file-flow-ai/backend/*.py)"
+      "Bash(ls c:/Users/ShaiS/Documents/Repos/file-flow-ai/backend/*.py)",
+      "Bash(grep -r \"{{\" /c/Users/ShaiS/Documents/Repos/file-flow-ai/backend --include=\"*.py\" ! -path \"*/.venv/*\" -n)",
+      "Bash(grep -r {{ /c/Users/ShaiS/Documents/Repos/file-flow-ai/backend --include=*.py ! -path */.venv/* -n)",
+      "Bash(grep -r {{file: /c/Users/ShaiS/Documents/Repos/file-flow-ai/frontend --include=*.ts --include=*.tsx --include=*.js --include=*.jsx ! -path */.next/* -n)",
+      "Bash(grep -r file: /c/Users/ShaiS/Documents/Repos/file-flow-ai/frontend --include=*.ts --include=*.tsx ! -path */.next/* ! -path */node_modules/* -n)"
     ]
   },
   "hooks": {

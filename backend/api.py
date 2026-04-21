@@ -410,6 +410,15 @@ def _inject_user_action_message(session_id: str, message_text: str):
             print(f"Warning: failed to update LangGraph checkpoint: {e}")
 
 
+def _to_relative(abs_path: str, working_directory: str) -> str:
+    """Convert an absolute path to a relative path from working_directory."""
+    try:
+        rel = os.path.relpath(abs_path, working_directory).replace("\\", "/")
+        return rel if rel != "." else ""
+    except ValueError:
+        return abs_path
+
+
 def _normalize_path(path: str) -> str:
     """Normalize a path from the frontend.
 
@@ -457,7 +466,8 @@ async def manual_delete_file(session_id: str, request: DeleteFileRequest):
     message_text = f"[User Action] Deleted '{item_name}'"
     _inject_user_action_message(session_id, message_text)
 
-    return {"success": True, "message": result["message"], "action": action, "affected_files": result["affected_files"]}
+    rel_affected = [_to_relative(p, working_directory) for p in result["affected_files"]]
+    return {"success": True, "message": result["message"], "action": action, "affected_files": rel_affected}
 
 
 @app.post("/sessions/{session_id}/files/move")
@@ -495,7 +505,8 @@ async def manual_move_file(session_id: str, request: MoveFileRequest):
     message_text = f"[User Action] Moved '{item_name}' to '{dest_name}'"
     _inject_user_action_message(session_id, message_text)
 
-    return {"success": True, "message": result["message"], "action": action, "affected_files": result["affected_files"]}
+    rel_affected = [_to_relative(p, working_directory) for p in result["affected_files"]]
+    return {"success": True, "message": result["message"], "action": action, "affected_files": rel_affected}
 
 
 @app.post("/sessions/{session_id}/files/create-folder")
@@ -536,7 +547,7 @@ async def manual_create_folder(session_id: str, request: CreateFolderRequest):
     message_text = f"[User Action] Created folder '{request.name}'"
     _inject_user_action_message(session_id, message_text)
 
-    return {"success": True, "message": f"Created folder '{request.name}'", "action": action, "affected_files": [folder_path]}
+    return {"success": True, "message": f"Created folder '{request.name}'", "action": action, "affected_files": [_to_relative(folder_path, working_directory)]}
 
 
 # ── File Metadata endpoints ──

@@ -202,6 +202,22 @@ class AgentAPI:
         id_map = file_registry.get_id_map(session_id)
         file_id_map = {path: id_map[path] for path in all_paths if path in id_map}
 
+        # Relativize affected_files paths
+        wd = agent.working_directory
+
+        def to_rel(abs_path: str) -> str:
+            try:
+                rel = os.path.relpath(abs_path, wd).replace("\\", "/")
+                return rel if rel != "." else ""
+            except ValueError:
+                return abs_path
+
+        rel_affected_files = [to_rel(p) for p in agent.affected_files]
+        rel_last_affected_files = [to_rel(f) for f in result.last_affected_files if os.path.isfile(f)]
+
+        # Rebuild file_id_map keyed by relative paths
+        file_id_map = {to_rel(path): id_map[path] for path in all_paths if path in id_map}
+
         # Convert clarification request if present
         clarification = None
         if result.clarification:
@@ -214,8 +230,8 @@ class AgentAPI:
         return AgentResponse(
             message=result.result_message,
             working_directory=agent.working_directory,
-            affected_files=agent.affected_files,
-            last_affected_files=[f for f in result.last_affected_files if os.path.isfile(f)],
+            affected_files=rel_affected_files,
+            last_affected_files=rel_last_affected_files,
             analysis_tokens=result.analysis_tokens,
             instruction_tokens=result.instruction_tokens,
             actions=action_dicts,

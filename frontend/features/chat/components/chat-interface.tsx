@@ -275,9 +275,17 @@ export default function ChatInterface({
       const editor = editorRef.current;
       if (!editor) return;
 
-      // Check if already inserted
+      // Compute relative path from workingDirectory
+      const wd = (workingDirectory ?? "").replace(/\\/g, "/").replace(/\/$/, "");
+      const fullPath = (fileRef.path ?? "").replace(/\\/g, "/");
+      const relativePath =
+        wd && fullPath.startsWith(wd)
+          ? fullPath.slice(wd.length).replace(/^\//, "")
+          : fileRef.name;
+
+      // Check if already inserted (by relative path)
       const existing = editor.querySelector(
-        `[data-file-ref="${fileRef.name}"]`,
+        `[data-file-ref="${relativePath}"]`,
       );
       if (existing) return;
 
@@ -288,7 +296,7 @@ export default function ChatInterface({
 
       // Create the badge element
       const badge = document.createElement("span");
-      badge.setAttribute("data-file-ref", fileRef.name);
+      badge.setAttribute("data-file-ref", relativePath);
       badge.setAttribute("contenteditable", "false");
       badge.className =
         "inline-flex items-center gap-1 px-1.5 py-0.5 mx-0.5 rounded-md bg-amber-50 dark:bg-amber-900/30 text-xs text-amber-800 dark:text-amber-200 border border-amber-200 dark:border-amber-700 align-middle select-none";
@@ -341,7 +349,7 @@ export default function ChatInterface({
 
       editor.focus();
     },
-    [],
+    [workingDirectory],
   );
 
   // Expose chat callbacks to parent (must be after insertFileBadge definition)

@@ -77,9 +77,9 @@ export default function FileItem({
   const [isDragOver, setIsDragOver] = useState(false);
   const indicator = getChangeIndicator(changeType);
 
-  // Drop on a file = move to that file's parent folder
-  const lastSep = Math.max(file.path.lastIndexOf("/"), file.path.lastIndexOf("\\"));
-  const parentPath = lastSep > 0 ? file.path.substring(0, lastSep) : file.path;
+  // Drop on a file = move to that file's parent folder (paths are relative with forward slashes)
+  const lastSep = file.path.lastIndexOf("/");
+  const parentPath = lastSep > 0 ? file.path.substring(0, lastSep) : "";
 
   const handleFileDragOver = (e: React.DragEvent) => {
     if (
@@ -112,8 +112,8 @@ export default function FileItem({
     try {
       const parsed = JSON.parse(data);
       // Don't move to same location
-      const dragSep = Math.max(parsed.path.lastIndexOf("/"), parsed.path.lastIndexOf("\\"));
-      const draggedParent = dragSep > 0 ? parsed.path.substring(0, dragSep) : parsed.path;
+      const dragSep = parsed.path.lastIndexOf("/");
+      const draggedParent = dragSep > 0 ? parsed.path.substring(0, dragSep) : "";
       if (draggedParent === parentPath) return;
       // Don't drop on self
       if (parsed.path === file.path) return;

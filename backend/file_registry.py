@@ -93,10 +93,20 @@ class FileRegistry:
         """Build a folder tree with stable IDs from the registry.
 
         Walks the disk, auto-registers unknown files, and returns a tree
-        matching the frontend's FolderType shape.
+        matching the frontend's FolderType shape. Paths in the tree are
+        relative to working_directory (using forward slashes), except the
+        root node whose path is an empty string.
         """
         # First ensure all files are registered
         path_to_id = self.scan_and_register(session_id, working_directory)
+
+        def to_relative(abs_path: str) -> str:
+            """Convert an absolute path to a relative path from working_directory."""
+            rel = os.path.relpath(abs_path, working_directory)
+            # os.path.relpath returns "." for the root itself
+            if rel == ".":
+                return ""
+            return rel.replace("\\", "/")
 
         def build_node(dir_path: str) -> Dict[str, Any]:
             dir_id = path_to_id.get(dir_path, self.db.register_file(session_id, dir_path, "folder"))
@@ -104,7 +114,7 @@ class FileRegistry:
                 "id": dir_id,
                 "name": os.path.basename(dir_path),
                 "type": "folder",
-                "path": dir_path,
+                "path": to_relative(dir_path),
                 "children": [],
             }
 
@@ -125,7 +135,7 @@ class FileRegistry:
                         "id": file_id,
                         "name": entry_name,
                         "type": "file",
-                        "path": entry_path,
+                        "path": to_relative(entry_path),
                         "extension": ext,
                     }
                     try:
